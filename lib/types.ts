@@ -51,3 +51,21 @@ export interface Meta {
   createdAt: string;
   updatedAt: string;
 }
+
+// Create/update payload shapes for lib/repo.ts: entity minus the sync trio. Place additionally
+// makes ratings/categoryIds optional (defaulting to {} / [] on create) since those are usually
+// populated after the place exists (via setRating) rather than at creation time.
+export type PlaceInput = Omit<Place, keyof SyncFields | "ratings" | "categoryIds"> & {
+  ratings?: Record<string, number>;
+  categoryIds?: string[];
+};
+
+// weights is optional (defaults to {}) — categories are typically created first, then weights
+// are populated via setWeights.
+export type CategoryInput = Omit<Category, keyof SyncFields | "weights"> & {
+  weights?: Record<string, number>;
+};
+
+export type CriterionInput = Omit<Criterion, keyof SyncFields>;
+
+export type VisitInput = Omit<Visit, keyof SyncFields>;
