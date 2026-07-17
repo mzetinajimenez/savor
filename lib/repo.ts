@@ -201,28 +201,42 @@ export async function deleteVisit(id: string): Promise<void> {
 // Fine-grained setters so callers don't need to read-modify-write the whole ratings/weights map
 // themselves (and can't accidentally clobber sibling keys via a partial update()).
 
+// setRating and setWeights each do a read-modify-write on a whole nested map (ratings /
+// weights). Left as separate awaited get() then update() calls, two concurrent calls targeting
+// the same row (e.g. two different criteria's ratings) could both read the pre-mutation map and
+// the second write would silently clobber the first's key — a lost update. Wrapping the
+// get+validate+write in a single Dexie `rw` transaction makes it atomic: IndexedDB serializes
+// readwrite transactions with overlapping scope, so a second call's read can't start until the
+// first call's transaction (read AND write) has committed.
+
 export async function setRating(
   placeId: string,
   criterionId: string,
   value: number | null
 ): Promise<void> {
-  const place = await getLiveOrThrow(db.places, placeId, "place");
   const validated = ratingValueSchema.parse(value);
 
-  const ratings = { ...place.ratings };
-  if (validated === null) {
-    delete ratings[criterionId];
-  } else {
-    ratings[criterionId] = Math.min(5, Math.max(1, Math.round(validated)));
-  }
-  await db.places.update(placeId, { ratings, updatedAt: nowIso() });
+  await db.transaction("rw", db.places, async () => {
+    const place = await getLiveOrThrow(db.places, placeId, "place");
+
+    const ratings = { ...place.ratings };
+    if (validated === null) {
+      delete ratings[criterionId];
+    } else {
+      ratings[criterionId] = Math.min(5, Math.max(1, Math.round(validated)));
+    }
+    await db.places.update(placeId, { ratings, updatedAt: nowIso() });
+  });
 }
 
 export async function setWeights(
   categoryId: string,
   weights: Record<string, number>
 ): Promise<void> {
-  await getLiveOrThrow(db.categories, categoryId, "category");
   const validated = weightsSchema.parse(weights);
-  await db.categories.update(categoryId, { weights: validated, updatedAt: nowIso() });
+
+  await db.transaction("rw", db.categories, async () => {
+    await getLiveOrThrow(db.categories, categoryId, "category");
+    await db.categories.update(categoryId, { weights: validated, updatedAt: nowIso() });
+  });
 }

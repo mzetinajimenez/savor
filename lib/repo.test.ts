@@ -307,6 +307,20 @@ describe("setRating", () => {
     await deletePlace(place.id);
     await expect(setRating(place.id, "crit-1", 5)).rejects.toThrow();
   });
+
+  // Regression test: setRating does a read-modify-write on the whole `ratings` map. Two calls
+  // for DIFFERENT criteria on the same place, fired without awaiting between them, must not
+  // let the second write clobber the first's key (lost update) — each must read the other's
+  // write, not a stale pre-mutation snapshot. This requires the get+merge+write to be atomic
+  // (e.g. a single Dexie readwrite transaction), not just three independently-awaited steps.
+  it("does not lose a concurrent setRating on a different criterion", async () => {
+    const place = await createPlace({ name: "P", status: "been" });
+
+    await Promise.all([setRating(place.id, "crit-1", 3), setRating(place.id, "crit-2", 5)]);
+
+    const stored = await db.places.get(place.id);
+    expect(stored?.ratings).toEqual({ "crit-1": 3, "crit-2": 5 });
+  });
 });
 
 describe("setWeights", () => {
