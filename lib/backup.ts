@@ -6,12 +6,9 @@
 // importing a backup must not resurrect the "first run" seeding path.
 
 import { z } from "zod";
-import { db } from "./db";
+import { db, SCHEMA_VERSION } from "./db";
+import { categoryFields, criterionFields, placeFields, visitFields } from "./repo";
 import type { Category, Criterion, Place, Visit } from "./types";
-
-// Mirrors db.ts's SCHEMA_VERSION (not exported from there). v1 backups only accept an exact
-// match — a newer schemaVersion means this build doesn't know how to interpret the payload.
-const CURRENT_SCHEMA_VERSION = 1;
 
 export class BackupValidationError extends Error {
   constructor(message: string) {
@@ -23,7 +20,8 @@ export class BackupValidationError extends Error {
 // ---- validation schemas (internal) ----
 // Unlike repo.ts's create/update schemas (which validate user input and let createEntity mint
 // the sync trio), backup entities ARE the full stored rows, so every schema here validates the
-// complete shape — sync trio included.
+// complete shape — sync trio included. Field-level shapes (name/status/weights/etc.) are reused
+// from repo.ts's exported *Fields objects rather than restated here, so the two can't drift.
 
 const syncFieldsShape = {
   id: z.string().min(1),
@@ -32,41 +30,13 @@ const syncFieldsShape = {
   deletedAt: z.string().nullable(),
 };
 
-const placeSchema = z.object({
-  ...syncFieldsShape,
-  name: z.string().min(1),
-  status: z.enum(["want_to_try", "been"]),
-  cuisine: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  lat: z.number().optional(),
-  lng: z.number().optional(),
-  notes: z.string().optional(),
-  categoryIds: z.array(z.string()),
-  ratings: z.record(z.string(), z.number()),
-});
+const placeSchema = z.object({ ...syncFieldsShape, ...placeFields });
 
-const criterionSchema = z.object({
-  ...syncFieldsShape,
-  name: z.string().min(1),
-  sortOrder: z.number(),
-});
+const criterionSchema = z.object({ ...syncFieldsShape, ...criterionFields });
 
-const categorySchema = z.object({
-  ...syncFieldsShape,
-  name: z.string().min(1),
-  emoji: z.string().optional(),
-  weights: z.record(z.string(), z.number()),
-  sortOrder: z.number(),
-});
+const categorySchema = z.object({ ...syncFieldsShape, ...categoryFields });
 
-const visitSchema = z.object({
-  ...syncFieldsShape,
-  placeId: z.string().min(1),
-  date: z.string().min(1),
-  dishes: z.string(),
-  notes: z.string(),
-});
+const visitSchema = z.object({ ...syncFieldsShape, ...visitFields });
 
 const backupSchema = z.object({
   app: z.literal("savor"),
@@ -115,10 +85,10 @@ export function parseBackup(json: unknown): Backup {
     );
   }
 
-  if (record.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+  if (record.schemaVersion !== SCHEMA_VERSION) {
     throw new BackupValidationError(
       `Unsupported backup schema version ${JSON.stringify(record.schemaVersion)} ` +
-        `(expected ${CURRENT_SCHEMA_VERSION})`
+        `(expected ${SCHEMA_VERSION})`
     );
   }
 
@@ -137,7 +107,7 @@ export function parseBackup(json: unknown): Backup {
  */
 export async function exportBackup(): Promise<Blob> {
   const meta = await db.meta.get("meta");
-  const schemaVersion = meta?.schemaVersion ?? CURRENT_SCHEMA_VERSION;
+  const schemaVersion = meta?.schemaVersion ?? SCHEMA_VERSION;
 
   const [places, criteria, categories, visits] = await Promise.all([
     db.places.toArray(),

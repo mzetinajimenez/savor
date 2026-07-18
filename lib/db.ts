@@ -25,7 +25,7 @@ class SavorDB extends Dexie {
 export const db = new SavorDB();
 
 const DEFAULT_CRITERIA_NAMES = ["Cost", "Food quality", "Service", "Ambiance"] as const;
-const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 1;
 
 /**
  * Seeds the 4 default criteria and the singleton meta row on first run only.

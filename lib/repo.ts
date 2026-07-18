@@ -19,13 +19,17 @@ import type {
   VisitInput,
 } from "./types";
 
-// ---- validation schemas (internal) ----
+// ---- validation schemas ----
 // Field schemas are shared between create/update so the two variants can't drift, but create
 // and update schemas are built separately: create applies defaults (ratings: {}, weights: {})
 // for omitted fields, while update must NOT inject those defaults — an update patch that omits
 // a field should leave the existing value untouched, not reset it.
+//
+// The four *Fields objects are also exported for lib/backup.ts, which composes its full-row
+// (sync trio + fields) schemas from these instead of restating each field's zod type by hand —
+// a single source of truth for what shape each entity's non-sync-trio fields take.
 
-const placeFields = {
+export const placeFields = {
   name: z.string().min(1),
   status: z.enum(["want_to_try", "been"]),
   cuisine: z.string().optional(),
@@ -43,7 +47,7 @@ const placeCreateSchema = z.object(placeFields).extend({
 });
 const placeUpdateSchema = z.object(placeFields).partial();
 
-const categoryFields = {
+export const categoryFields = {
   name: z.string().min(1),
   emoji: z.string().optional(),
   weights: z.record(z.string(), z.number()),
@@ -54,14 +58,14 @@ const categoryCreateSchema = z.object(categoryFields).extend({
 });
 const categoryUpdateSchema = z.object(categoryFields).partial();
 
-const criterionFields = {
+export const criterionFields = {
   name: z.string().min(1),
   sortOrder: z.number(),
 };
 const criterionCreateSchema = z.object(criterionFields);
 const criterionUpdateSchema = z.object(criterionFields).partial();
 
-const visitFields = {
+export const visitFields = {
   placeId: z.string().min(1),
   date: z.string().min(1),
   dishes: z.string(),

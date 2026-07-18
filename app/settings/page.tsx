@@ -1,17 +1,20 @@
 "use client";
 
-// Settings tab: rating-criteria editor, on-device storage status, and app info, in that order.
-// Reads/writes for criteria flow through CriteriaEditor (which itself goes through lib/hooks /
-// lib/repo, per the app's rule that components never touch Dexie directly). StoragePanel below
-// talks to navigator.storage directly — there's no repo/hooks seam for browser storage APIs —
-// which is why this whole page is a client component. It feature-detects estimate()/persisted()
-// so older Safari (which lacks them) degrades to a message instead of crashing. Best-effort
-// persist() on every app load already happens once in lib/hooks' useDbInit (mounted via
-// AppInit in the root layout); the button here is for the user to retry/confirm explicitly.
+// Settings tab: rating-criteria editor, on-device storage status, backup export/import, and app
+// info, in that order. Reads/writes for criteria flow through CriteriaEditor (which itself goes
+// through lib/hooks / lib/repo, per the app's rule that components never touch Dexie directly).
+// StoragePanel below talks to navigator.storage directly — there's no repo/hooks seam for
+// browser storage APIs — which is why this whole page is a client component. It feature-detects
+// estimate()/persisted() so older Safari (which lacks them) degrades to a message instead of
+// crashing. Best-effort persist() on every app load already happens once in lib/hooks'
+// useDbInit (mounted via AppInit in the root layout); the button here is for the user to
+// retry/confirm explicitly. BackupPanel below goes through lib/backup (export/parse/import),
+// itself layered on lib/repo/lib/db for the same never-touch-Dexie-directly rule.
 
 import { useEffect, useState } from "react";
 import { toast } from "@/app/components/Toast";
 import { HeaderShell } from "@/app/components/ui";
+import BackupPanel from "@/app/components/settings/BackupPanel";
 import CriteriaEditor from "@/app/components/settings/CriteriaEditor";
 
 export default function SettingsPage() {
@@ -33,7 +36,12 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* BackupPanel lands with T13 wiring */}
+      <section className="px-4 py-6">
+        <h2 className="font-display text-xl text-plum">Backup</h2>
+        <div className="mt-3">
+          <BackupPanel />
+        </div>
+      </section>
 
       <section className="px-4 pb-8">
         <h2 className="font-display text-xl text-plum">About</h2>
