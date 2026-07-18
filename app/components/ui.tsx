@@ -78,7 +78,9 @@ export function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`${base} ${look} active:scale-95 ${
+      // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual pill —
+      // the extra height is invisible padding around the same compact px-3.5/py-1.5 label.
+      className={`${base} ${look} min-h-11 active:scale-95 ${
         active ? "active:opacity-90" : "active:bg-surface-sunk"
       } ${className}`}
     >

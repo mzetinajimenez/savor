@@ -23,11 +23,16 @@ export default function CategoryDetailPage() {
   const rankedData = useRankedCategory(id);
   const [editOpen, setEditOpen] = useState(false);
   const [weightsOpen, setWeightsOpen] = useState(false);
+  // Set the moment a delete is confirmed, before router.push("/categories") resolves. The
+  // tombstone lands in Dexie (and useCategory flips to undefined) a beat before the route
+  // actually changes, which would otherwise flash the "not found" state on the way out.
+  const [leaving, setLeaving] = useState(false);
 
   // useCategory resolves to undefined both while loading and when the id is missing/tombstoned
   // — there's no separate signal to tell those apart, so this renders "not found" for both. In
   // practice the DB round trip is near-instant, so a genuinely-loading flash is imperceptible.
   if (category === undefined) {
+    if (leaving) return null;
     return (
       <>
         <HeaderShell title="List not found" />
@@ -129,7 +134,10 @@ export default function CategoryDetailPage() {
           mode="edit"
           category={category}
           onClose={() => setEditOpen(false)}
-          onDeleted={() => router.push("/categories")}
+          onDeleted={() => {
+            setLeaving(true);
+            router.push("/categories");
+          }}
         />
       ) : null}
 

@@ -176,7 +176,14 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
             id="place-name"
             type="text"
             value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            onChange={(e) => {
+              const name = e.target.value;
+              setForm((f) => ({ ...f, name }));
+              // Editing the name invalidates any prior lookup — a stale result list (or "nothing
+              // found" hint) shouldn't linger and look like it applies to the new text.
+              setLookupResults([]);
+              setSearched(false);
+            }}
             placeholder="Taco Spot"
             autoComplete="off"
             className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"

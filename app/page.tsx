@@ -61,7 +61,7 @@ export default function PlacesPage() {
 
   return (
     <>
-      <HeaderShell title="savor">
+      <HeaderShell title="Places">
         <div className="flex flex-col gap-3">
           <SearchInput value={search} onChange={setSearch} />
           {hasAnyPlaces ? (
