@@ -42,3 +42,6 @@ next-env.d.ts
 
 # orchestration scratch
 .superpowers/
+
+# playwright mcp scratch (snapshots, console logs)
+.playwright-mcp/
