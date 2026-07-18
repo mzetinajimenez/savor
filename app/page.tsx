@@ -1,8 +1,18 @@
-export default function Home() {
+import { AddPlaceButton, EmptyState, HeaderShell } from "./components/ui";
+
+// Places tab (home). Real list + filters land in T7; this renders the chrome + an inviting
+// empty state so the route is complete today.
+export default function PlacesPage() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-2 p-8 text-center">
-      <h1 className="text-2xl font-semibold text-neutral-900">savor</h1>
-      <p className="text-neutral-600">Places tab coming soon.</p>
-    </main>
+    <>
+      <HeaderShell title="Places" />
+      <EmptyState
+        emoji="🍽️"
+        title="Nothing on the table yet"
+        hint="Add the first spot you've eaten — or one you're dying to try."
+      >
+        <AddPlaceButton />
+      </EmptyState>
+    </>
   );
 }

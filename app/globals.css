@@ -1,13 +1,45 @@
 @import "tailwindcss";
 
+/* ─── savor · "Cellar" theme ──────────────────────────────────────────────
+   A personal tasting ledger, not a utility tracker. Deep wine-plum is the
+   structural brand color (nav, headers, active state); ember and gold are the
+   appetite accents; everything sits on a clay-parchment base. Deliberately
+   distinct from the sibling app's cream/pine/terracotta and from default gray.
+   -------------------------------------------------------------------------- */
 @theme {
-  /* Minimal neutral placeholder tokens — T6 owns the real theme. */
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f5f5f5;
-  --color-neutral-200: #e5e5e5;
-  --color-neutral-600: #525252;
-  --color-neutral-700: #404040;
-  --color-neutral-900: #171717;
+  /* Surfaces — warm clay parchment, not cream. */
+  --color-shell: #f6ede3; /* app background */
+  --color-surface: #fffaf4; /* raised cards */
+  --color-surface-sunk: #efe3d5; /* wells / insets */
+  --color-line: #e6d8c7; /* hairlines on parchment */
+
+  /* Ink — a wine-black, warmer than neutral gray. */
+  --color-ink: #2a1a1e;
+  --color-ink-soft: #6f545a; /* secondary text */
+
+  /* Plum — brand / structure / active. The signature hue. */
+  --color-plum: #7a2e43;
+  --color-plum-deep: #5e2234; /* pressed */
+  --color-plum-tint: #f1e2e4; /* plum wash */
+
+  /* Ember — energy / primary action / rating fill. */
+  --color-ember: #d2551c;
+  --color-ember-deep: #b5470f; /* pressed */
+  --color-ember-tint: #fbe6d4;
+
+  /* Gold — the score seal / quality mark. */
+  --color-gold: #9c6f18;
+  --color-gold-tint: #f5e9cf;
+
+  /* Chili — destructive / error. */
+  --color-chili: #be3227;
+
+  /* Type — Instrument Serif (menu display) + Hanken Grotesk (humanist body). */
+  --font-display: var(--font-instrument), ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-card: 1rem;
 }
 
 :root {
@@ -20,12 +52,80 @@ body {
 }
 
 body {
+  background-color: var(--color-shell);
+  color: var(--color-ink);
+  font-family: var(--font-body);
   /* Respect iOS safe areas so fixed chrome clears the home indicator. */
   padding-bottom: env(safe-area-inset-bottom);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Serif numerals feel intentional in the score seal / metrics. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
 :focus-visible {
-  outline: 2px solid var(--color-neutral-700);
+  outline: 2px solid var(--color-plum);
   outline-offset: 2px;
+}
+
+/* Overlay + toast motion (disabled under prefers-reduced-motion below). */
+@keyframes savor-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes savor-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes savor-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes savor-toast {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.anim-fade {
+  animation: savor-fade 0.2s ease-out;
+}
+.anim-sheet {
+  animation: savor-sheet 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-pop {
+  animation: savor-pop 0.2s ease-out;
+}
+.anim-toast {
+  animation: savor-toast 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,5 +1,26 @@
 import type { Metadata, Viewport } from "next";
+import { Hanken_Grotesk, Instrument_Serif } from "next/font/google";
+import AppInit from "./components/AppInit";
+import BottomNav from "./components/BottomNav";
+import { Toaster } from "./components/Toast";
 import "./globals.css";
+
+// Type pairing for savor's "Cellar" look: Instrument Serif for menu-style display, Hanken
+// Grotesk for warm, legible body/UI. Both wired as CSS variables consumed by @theme.
+const instrument = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-hanken",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "savor",
@@ -37,8 +58,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-dvh antialiased">{children}</body>
+    <html lang="en" className={`${instrument.variable} ${hanken.variable}`}>
+      <body className="min-h-dvh antialiased">
+        {/* Single-mount data touchpoint: seeds the DB + requests persistent storage. */}
+        <AppInit />
+        {/* Content clears the fixed bottom nav (nav + FAB overhang + safe area). */}
+        <main className="mx-auto w-full max-w-xl pb-[calc(6rem+env(safe-area-inset-bottom))]">
+          {children}
+        </main>
+        <BottomNav />
+        <Toaster />
+      </body>
     </html>
   );
 }
