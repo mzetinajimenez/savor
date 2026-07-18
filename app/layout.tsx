@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Hanken_Grotesk, Instrument_Serif } from "next/font/google";
 import AppInit from "./components/AppInit";
 import BottomNav from "./components/BottomNav";
+import { AddPlaceHost } from "./components/places/PlaceForm";
 import { Toaster } from "./components/Toast";
 import "./globals.css";
 
@@ -68,6 +69,8 @@ export default function RootLayout({
         </main>
         <BottomNav />
         <Toaster />
+        {/* T8's add-place sheet: listens for the FAB's savor:add-place event, renders on demand. */}
+        <AddPlaceHost />
       </body>
     </html>
   );
