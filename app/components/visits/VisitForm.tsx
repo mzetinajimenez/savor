@@ -61,7 +61,14 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
     return places.filter((p) => p.name.toLowerCase().includes(term));
   }, [places, search]);
 
-  const canSave = Boolean(selectedPlaceId) && Boolean(date) && !saving;
+  // In fixed mode, the place must actually resolve live (not tombstoned/stale) before we let a
+  // visit be created against it — otherwise a deleted-out-from-under-us placeId could still
+  // produce an orphan visit.
+  const canSave =
+    Boolean(selectedPlaceId) &&
+    Boolean(date) &&
+    !saving &&
+    (!placeId || Boolean(fixedPlace));
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

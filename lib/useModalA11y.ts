@@ -26,6 +26,14 @@ export function useModalA11y(
     const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE);
     (focusable[0] ?? container).focus();
 
+    // Body scroll-lock: capture whatever inline `overflow` is in effect right now — for a
+    // nested/stacked sheet that may already be "hidden" from an outer one — and restore that
+    // exact value on unmount rather than a hardcoded "". That way closing an inner sheet can't
+    // un-lock scrolling while an outer sheet is still open, and a single sheet correctly
+    // restores whatever the page had before (usually "", but respects an existing inline style).
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         onClose();
@@ -50,6 +58,7 @@ export function useModalA11y(
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
