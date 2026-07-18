@@ -127,7 +127,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search your places…"
                 aria-label="Search places"
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
               />
               <div
                 role="radiogroup"
@@ -171,7 +171,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             value={date}
             max={todayStr()}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink focus-visible:outline-2 focus-visible:outline-plum"
+            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink focus-visible:outline-2 focus-visible:outline-plum"
           />
         </Field>
 
@@ -182,7 +182,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             value={dishes}
             onChange={(e) => setDishes(e.target.value)}
             placeholder="What did you eat?"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
           />
         </Field>
 
@@ -193,7 +193,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="How was it?"
-            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
           />
         </Field>
       </form>

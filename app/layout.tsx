@@ -34,7 +34,7 @@ export const metadata: Metadata = {
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icon-192.png",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -44,11 +44,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fafafa",
+  // Cellar clay-parchment shell (--color-shell) so the browser chrome blends into the app.
+  themeColor: "#f6ede3",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom deliberately left enabled (no maximumScale / userScalable) — WCAG 1.4.4.
   // Required for env(safe-area-inset-*) to be non-zero on notched phones.
   viewportFit: "cover",
 };

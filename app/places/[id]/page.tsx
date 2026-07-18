@@ -358,7 +358,7 @@ function PlaceEditSheet({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Taco Spot"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
           />
         </label>
 
@@ -370,7 +370,7 @@ function PlaceEditSheet({
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             placeholder="Mexican, ramen, pizza…"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
           />
         </label>
 
@@ -382,7 +382,7 @@ function PlaceEditSheet({
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Austin"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
           />
         </label>
 
@@ -394,7 +394,7 @@ function PlaceEditSheet({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="123 Main St"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
           />
         </label>
 
@@ -407,7 +407,7 @@ function PlaceEditSheet({
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="What to order, the vibe, anything worth remembering…"
-            className="resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink outline-none focus-visible:border-plum"
+            className="resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
           />
         </label>
 

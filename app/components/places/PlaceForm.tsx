@@ -186,7 +186,7 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
             }}
             placeholder="Taco Spot"
             autoComplete="off"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
           />
 
           {trimmedName ? (
@@ -258,7 +258,7 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
             value={form.cuisine}
             onChange={(e) => setForm((f) => ({ ...f, cuisine: e.target.value }))}
             placeholder="Mexican, ramen, pizza…"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
           />
         </div>
 
@@ -273,7 +273,7 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             placeholder="What to order, the vibe, anything worth remembering…"
             rows={3}
-            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
           />
         </div>
 

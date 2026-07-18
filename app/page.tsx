@@ -131,7 +131,7 @@ function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search places, cuisine, city…"
         aria-label="Search places"
-        className="h-11 w-full rounded-full border border-line bg-surface pl-9 pr-3 text-[0.95rem] text-ink placeholder:text-ink-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+        className="h-11 w-full rounded-full border border-line bg-surface pl-9 pr-3 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
       />
     </div>
   );
