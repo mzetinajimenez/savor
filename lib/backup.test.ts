@@ -254,6 +254,47 @@ describe("parseBackup", () => {
   });
 });
 
+describe("parseBackup / importBackup with a legacy out-of-range rating", () => {
+  // createPlace/updatePlace now clamp ratings to integers 1-5 (defense-in-depth, on top of
+  // setRating's existing clamp), but that clamp lives only on the create/update schemas, not on
+  // placeFields.ratings itself — see the comment on placeFields in lib/repo.ts. A backup exported
+  // before that clamp existed (or from a looser client) may contain out-of-range values, and a
+  // restore must still round-trip that historical data faithfully rather than rejecting it.
+  it("still parses and restores a place with an out-of-range legacy rating", async () => {
+    await ensureSeeded();
+
+    const now = "2020-01-01T00:00:00.000Z";
+    const legacyPlace = {
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      name: "Old Taco Spot",
+      status: "been" as const,
+      categoryIds: [],
+      ratings: { "crit-1": 999, "crit-2": 0, "crit-3": 3.5 },
+    };
+
+    const rawBackup = {
+      app: "savor",
+      schemaVersion: 1,
+      exportedAt: now,
+      places: [legacyPlace],
+      criteria: [],
+      categories: [],
+      visits: [],
+    };
+
+    const parsed = parseBackup(rawBackup);
+    expect(parsed.places[0].ratings).toEqual({ "crit-1": 999, "crit-2": 0, "crit-3": 3.5 });
+
+    await importBackup(parsed);
+
+    const stored = await db.places.get(legacyPlace.id);
+    expect(stored?.ratings).toEqual({ "crit-1": 999, "crit-2": 0, "crit-3": 3.5 });
+  });
+});
+
 describe("summarizeBackup", () => {
   it("counts non-tombstoned rows and omits criteria from the summary", () => {
     const now = "2026-01-01T00:00:00.000Z";

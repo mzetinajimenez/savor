@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "./db";
+import { queryVisits } from "./hooks";
 import {
   createCategory,
   createCriterion,
@@ -71,6 +72,20 @@ describe("createPlace", () => {
       createPlace({ name: "X", status: "nope" })
     ).rejects.toThrow();
   });
+
+  // Defense-in-depth: setRating already clamps to 1-5, but createPlace/updatePlace take ratings
+  // directly, so the schema itself must reject an out-of-range value passed straight through.
+  it("rejects an out-of-range rating value", async () => {
+    await expect(
+      createPlace({ name: "X", status: "been", ratings: { crit1: 999 } })
+    ).rejects.toThrow();
+    await expect(
+      createPlace({ name: "X", status: "been", ratings: { crit1: 0 } })
+    ).rejects.toThrow();
+    await expect(
+      createPlace({ name: "X", status: "been", ratings: { crit1: 3.5 } })
+    ).rejects.toThrow();
+  });
 });
 
 describe("updatePlace", () => {
@@ -112,6 +127,11 @@ describe("updatePlace", () => {
     await deletePlace(place.id);
     await expect(updatePlace(place.id, { name: "X" })).rejects.toThrow();
   });
+
+  it("rejects an out-of-range rating value", async () => {
+    const place = await createPlace({ name: "Taco Spot", status: "been" });
+    await expect(updatePlace(place.id, { ratings: { crit1: 999 } })).rejects.toThrow();
+  });
 });
 
 describe("deletePlace", () => {
@@ -136,6 +156,64 @@ describe("deletePlace", () => {
     const place = await createPlace({ name: "Taco Spot", status: "want_to_try" });
     await deletePlace(place.id);
     await expect(deletePlace(place.id)).rejects.toThrow();
+  });
+
+  // Regression test: there's no visit-delete UI, so a place delete that didn't cascade would
+  // leave that place's visits permanently orphaned ("Unknown place" in the journal) and would
+  // desync the tombstone data for the future cloud-sync path.
+  it("cascades to the place's own non-tombstoned visits, leaving other places' visits untouched", async () => {
+    const place = await createPlace({ name: "Taco Spot", status: "been" });
+    const otherPlace = await createPlace({ name: "Ramen House", status: "been" });
+
+    const visit1 = await createVisit({
+      placeId: place.id,
+      date: "2026-01-01",
+      dishes: "Tacos",
+      notes: "",
+    });
+    const visit2 = await createVisit({
+      placeId: place.id,
+      date: "2026-01-02",
+      dishes: "Burrito",
+      notes: "",
+    });
+    const otherVisit = await createVisit({
+      placeId: otherPlace.id,
+      date: "2026-01-01",
+      dishes: "Ramen",
+      notes: "",
+    });
+
+    vi.setSystemTime(new Date("2026-01-01T00:05:00.000Z"));
+    await deletePlace(place.id);
+
+    const storedPlace = await db.places.get(place.id);
+    expect(storedPlace?.deletedAt).toBe("2026-01-01T00:05:00.000Z");
+
+    // Rows are tombstoned (still present), not physically removed, and stamped with the same
+    // deletedAt/updatedAt as the place itself.
+    const storedVisit1 = await db.visits.get(visit1.id);
+    const storedVisit2 = await db.visits.get(visit2.id);
+    expect(storedVisit1).toBeDefined();
+    expect(storedVisit1?.deletedAt).toBe("2026-01-01T00:05:00.000Z");
+    expect(storedVisit1?.updatedAt).toBe("2026-01-01T00:05:00.000Z");
+    expect(storedVisit2).toBeDefined();
+    expect(storedVisit2?.deletedAt).toBe("2026-01-01T00:05:00.000Z");
+    expect(storedVisit2?.updatedAt).toBe("2026-01-01T00:05:00.000Z");
+
+    // A different place's visit is untouched.
+    const storedOtherVisit = await db.visits.get(otherVisit.id);
+    expect(storedOtherVisit?.deletedAt).toBeNull();
+
+    // Journal-visible reads (queryVisits, the same query useVisits/the journal UI runs through)
+    // exclude the now-tombstoned visits but still return the other place's live visit.
+    const allVisible = await queryVisits();
+    expect(allVisible.map((v) => v.id)).not.toContain(visit1.id);
+    expect(allVisible.map((v) => v.id)).not.toContain(visit2.id);
+    expect(allVisible.map((v) => v.id)).toContain(otherVisit.id);
+
+    const placeScoped = await queryVisits(place.id);
+    expect(placeScoped).toEqual([]);
   });
 });
 

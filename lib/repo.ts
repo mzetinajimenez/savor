@@ -39,13 +39,26 @@ export const placeFields = {
   lng: z.number().optional(),
   notes: z.string().optional(),
   categoryIds: z.array(z.string()),
+  // Deliberately unclamped: lib/backup.ts composes its restore schema from this object, and a
+  // backup must keep restoring historical (or looser future) data faithfully rather than
+  // rejecting it. The 1-5 integer clamp below is applied only on the create/update path, not
+  // here — see clampedRatingsSchema.
   ratings: z.record(z.string(), z.number()),
 };
+
+// Same 1-5 integer range setRating already enforces (via Math.min/Math.max), applied at the
+// schema level so a malformed direct createPlace/updatePlace call can't write an out-of-range
+// rating either. Scoped to the create/update schemas only (not placeFields.ratings) so backup
+// restores of historical data are unaffected — see the comment on placeFields.ratings above.
+const clampedRatingsSchema = z.record(z.string(), z.number().int().min(1).max(5));
+
 const placeCreateSchema = z.object(placeFields).extend({
   categoryIds: z.array(z.string()).default([]),
-  ratings: z.record(z.string(), z.number()).default({}),
+  ratings: clampedRatingsSchema.default({}),
 });
-const placeUpdateSchema = z.object(placeFields).partial();
+const placeUpdateSchema = z.object(placeFields).partial().extend({
+  ratings: clampedRatingsSchema.optional(),
+});
 
 export const categoryFields = {
   name: z.string().min(1),
@@ -155,8 +168,31 @@ export async function updatePlace(id: string, patch: Partial<PlaceInput>): Promi
   return updateEntity(db.places, placeUpdateSchema, id, patch, "place");
 }
 
+// Deleting a place cascades to its own non-tombstoned visits, stamped with the SAME
+// deletedAt/updatedAt as the place. There's no visit-delete UI, so without this cascade a
+// deleted place's visits become permanent "Unknown place" orphans in the journal (queryVisits
+// has no way to know their place is gone) and the tombstone data drifts out of sync for the
+// future cloud-sync path. Runs as one `rw` transaction across both tables so a place can never
+// end up tombstoned with live visits still pointing at it (or vice versa) if something throws
+// partway through.
 export async function deletePlace(id: string): Promise<void> {
-  return deleteEntity(db.places, id, "place");
+  await db.transaction("rw", db.places, db.visits, async () => {
+    await getLiveOrThrow(db.places, id, "place");
+    const timestamp = nowIso();
+
+    await db.places.update(id, { deletedAt: timestamp, updatedAt: timestamp });
+
+    const liveVisits = await db.visits
+      .where("placeId")
+      .equals(id)
+      .filter((v) => v.deletedAt === null)
+      .toArray();
+    await Promise.all(
+      liveVisits.map((v) =>
+        db.visits.update(v.id, { deletedAt: timestamp, updatedAt: timestamp })
+      )
+    );
+  });
 }
 
 // ---- categories ----

@@ -60,6 +60,8 @@ export default function CategoryForm({
       }
       onSaved?.();
       onClose();
+    } catch {
+      toast("Couldn't save that list — try again");
     } finally {
       setSaving(false);
     }
@@ -73,6 +75,8 @@ export default function CategoryForm({
       toast("List deleted");
       onDeleted?.();
       onClose();
+    } catch {
+      toast("Couldn't delete that list — try again");
     } finally {
       setDeleting(false);
     }

@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 121 tests today; keep them passing.
+  must all pass. 125 tests today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
   asking first — prefer a built-in or a few lines of local code. (The PWA icons,
@@ -60,7 +60,7 @@ sabor/
 │       │   ├── CategoryForm.tsx  #   add/edit list sheet
 │       │   └── WeightsEditor.tsx #   per-list criterion weights → repo.setWeights
 │       ├── visits/
-│       │   ├── VisitForm.tsx     #   add/edit visit sheet (date / dishes / notes)
+│       │   ├── VisitForm.tsx     #   add visit sheet (date / dishes / notes)
 │       │   └── VisitCard.tsx     #   visit row for journal + place detail
 │       └── settings/
 │           ├── CriteriaEditor.tsx#   rename / add / remove / reorder criteria
@@ -155,3 +155,23 @@ path around the repo.
 - **Framework-free `lib/`.** Keep `lib/ranking.ts`, `lib/backup.ts`, and the query
   functions in `lib/hooks.ts` free of React/DOM so they stay unit-testable with
   fake-indexeddb. New data/logic gets a Vitest test alongside it.
+
+## Fast-follows
+
+Known gaps, not yet urgent enough to block a commit but worth doing soon:
+
+- **Type↔zod drift guard.** `lib/types.ts`'s entity interfaces and `lib/repo.ts`'s
+  hand-maintained `*Fields` zod schemas are two independent sources of truth for
+  the same shape. Nothing currently fails CI if they drift (e.g. a new optional
+  field added to `Place` but forgotten in `placeFields`). Add a static or
+  test-time check that ties them together.
+- **AbortController / request-token for in-flight OSM lookups.** `lib/lookup.ts`'s
+  `searchPlaces()` (called from `PlaceForm`'s "Look up" button) has no
+  cancellation: firing a second lookup before the first resolves can let a stale
+  response land after a newer one. Needs an `AbortController` (or a request-token
+  guard) so only the latest lookup's result is applied.
+- **Backup forward-migration-on-import strategy — required BEFORE the first
+  `SCHEMA_VERSION` bump.** `parseBackup` currently requires exact
+  `schemaVersion` equality (see `lib/backup.ts`), so the moment `SCHEMA_VERSION`
+  moves to 2, every v1 export becomes unimportable. Design and land a
+  migration step (v1 → v2 → …) before that bump ships, not after.

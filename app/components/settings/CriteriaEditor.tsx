@@ -139,6 +139,8 @@ function CriterionRow({
     try {
       await deleteCriterion(criterion.id);
       toast(`Deleted “${criterion.name}”`);
+    } catch {
+      toast(`Couldn't delete "${criterion.name}" — try again`);
     } finally {
       setBusy(false);
       setConfirmingDelete(false);
@@ -260,6 +262,8 @@ function AddCriterionRow({ existing }: { existing: Criterion[] }) {
       await createCriterion({ name: trimmed, sortOrder: nextSortOrder });
       setName("");
       toast(`Added “${trimmed}”`);
+    } catch {
+      toast(`Couldn't add "${trimmed}" — try again`);
     } finally {
       setAdding(false);
     }

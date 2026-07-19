@@ -50,6 +50,8 @@ export default function WeightsEditor({
       await setWeights(category.id, complete);
       toast("Weights saved");
       onClose();
+    } catch {
+      toast("Couldn't save weights — try again");
     } finally {
       setSaving(false);
     }
