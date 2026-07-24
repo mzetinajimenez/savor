@@ -54,12 +54,18 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "oEmbed service unavailable" }, { status: 502 });
   }
 
-  let data: TikTokOEmbedResponse;
+  let parsed: unknown;
   try {
-    data = (await upstream.json()) as TikTokOEmbedResponse;
+    parsed = await upstream.json();
   } catch {
     return NextResponse.json({ error: "oEmbed service unavailable" }, { status: 502 });
   }
+
+  if (typeof parsed !== "object" || parsed === null) {
+    return NextResponse.json({ error: "oEmbed service unavailable" }, { status: 502 });
+  }
+
+  const data = parsed as TikTokOEmbedResponse;
 
   return NextResponse.json({
     title: data.title,
