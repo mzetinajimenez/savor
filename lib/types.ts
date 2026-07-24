@@ -21,6 +21,8 @@ export interface Place extends SyncFields {
   notes?: string;
   categoryIds: string[];
   ratings: Record<string, number>;
+  sourceUrl?: string;
+  sourcePlatform?: "instagram" | "tiktok";
 }
 
 export interface Criterion extends SyncFields {

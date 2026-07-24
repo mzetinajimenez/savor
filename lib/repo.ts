@@ -44,6 +44,8 @@ export const placeFields = {
   // rejecting it. The 1-5 integer clamp below is applied only on the create/update path, not
   // here — see clampedRatingsSchema.
   ratings: z.record(z.string(), z.number()),
+  sourceUrl: z.string().url().optional(),
+  sourcePlatform: z.enum(["instagram", "tiktok"]).optional(),
 };
 
 // Same 1-5 integer range setRating already enforces (via Math.min/Math.max), applied at the
