@@ -67,6 +67,14 @@ describe("resolveSharedLink — adapter selection", () => {
     expect(result?.platform).toBe("instagram");
   });
 
+  it("selects the Instagram adapter for a nested /share/reel/{shortcode}/ wrapper URL", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+
+    const result = await resolveSharedLink("https://www.instagram.com/share/reel/Cxyz987ABC/");
+
+    expect(result?.platform).toBe("instagram");
+  });
+
   it("returns null for an unrecognized URL", async () => {
     const result = await resolveSharedLink("https://example.com/x");
 

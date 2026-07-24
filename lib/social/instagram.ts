@@ -9,10 +9,11 @@ import type { SharedLink, SocialAdapter } from "./types";
 
 const IG_HOSTS = new Set(["instagram.com", "www.instagram.com"]);
 
-// Matches /p/{shortcode}, /reel/{shortcode}, /share/... , and a bare /{username}/ profile.
-// Host-gated by `matches` before this ever runs, so the broad bare-username case can't swallow
-// non-Instagram URLs.
-const IG_PATH_RE = /^\/(p|reel|share)\/[^/]+\/?$|^\/[A-Za-z0-9._]+\/?$/;
+// Matches /p/{shortcode}, /reel/{shortcode}, /share/... (the share wrapper can nest a further
+// segment, e.g. /share/reel/{shortcode}/), and a bare /{username}/ profile. Host-gated by
+// `matches` before this ever runs, so the broad bare-username case can't swallow non-Instagram
+// URLs.
+const IG_PATH_RE = /^\/(p|reel)\/[^/]+\/?$|^\/share\/.+$|^\/[A-Za-z0-9._]+\/?$/;
 
 export const instagramAdapter: SocialAdapter = {
   platform: "instagram",
