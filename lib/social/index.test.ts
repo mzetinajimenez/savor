@@ -88,6 +88,33 @@ describe("resolveSharedLink — adapter selection", () => {
   });
 });
 
+describe("resolveSharedLink — host-spoof rejection", () => {
+  // Host-gating is the security-critical property of these adapters: a spoofed hostname must
+  // never be mistaken for the real platform. These pin `endsWith(".tiktok.com")` / the
+  // Instagram host-Set against a future regression (e.g. loosening either check to `.includes`).
+  it("rejects a TikTok-lookalike subdomain (tiktok.com.evil.com)", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await resolveSharedLink("https://tiktok.com.evil.com/@u/video/1");
+
+    expect(result).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an Instagram-lookalike subdomain (instagram.com.evil.com)", async () => {
+    const result = await resolveSharedLink("https://instagram.com.evil.com/p/abc");
+
+    expect(result).toBeNull();
+  });
+
+  it("rejects a hostname that merely contains 'tiktok' (eviltiktok.com)", async () => {
+    const result = await resolveSharedLink("https://eviltiktok.com/@u/video/1");
+
+    expect(result).toBeNull();
+  });
+});
+
 describe("TikTok hydrate — oEmbed success", () => {
   it("maps the proxy response into captionText/authorName/nameGuess", async () => {
     const fetchMock = vi.fn().mockResolvedValue(

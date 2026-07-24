@@ -12,7 +12,8 @@ const IG_HOSTS = new Set(["instagram.com", "www.instagram.com"]);
 // Matches /p/{shortcode}, /reel/{shortcode}, /share/... (the share wrapper can nest a further
 // segment, e.g. /share/reel/{shortcode}/), and a bare /{username}/ profile. Host-gated by
 // `matches` before this ever runs, so the broad bare-username case can't swallow non-Instagram
-// URLs.
+// URLs. Note: the bare-username case also matches IG system routes like /explore/ or /accounts/
+// — harmless here since hydrate never enriches (no fetch, no venue guess either way).
 const IG_PATH_RE = /^\/(p|reel)\/[^/]+\/?$|^\/share\/.+$|^\/[A-Za-z0-9._]+\/?$/;
 
 export const instagramAdapter: SocialAdapter = {
@@ -30,8 +31,13 @@ export const instagramAdapter: SocialAdapter = {
   },
 
   async hydrate(url: string): Promise<SharedLink> {
-    const parsed = new URL(url);
-    const canonical = `${parsed.origin}${parsed.pathname}`;
+    let canonical = url;
+    try {
+      const parsed = new URL(url);
+      canonical = `${parsed.origin}${parsed.pathname}`; // strip query + hash (IG share tracking params)
+    } catch {
+      // non-URL input (only reachable if a caller bypasses matches) — pass the raw string through
+    }
     return {
       platform: "instagram",
       url: canonical,

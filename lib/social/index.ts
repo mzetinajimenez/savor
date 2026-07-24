@@ -7,9 +7,10 @@ import { instagramAdapter } from "./instagram";
 import { tiktokAdapter } from "./tiktok";
 import type { SharedLink } from "./types";
 
-// TikTok before Instagram: both are host-gated on disjoint hostnames, so order between them
-// doesn't affect correctness today, but TikTok is checked first since it's the adapter with a
-// network round-trip (fewest wasted checks on the common case).
+// TikTok before Instagram: both adapters' `matches()` are host-gated on disjoint hostnames and
+// do no network I/O (only `hydrate()` does, and only after a match), so the order between them
+// is arbitrary — it doesn't affect correctness or performance either way. Kept stable for diff
+// hygiene, not for any behavioral reason.
 const adapters = [tiktokAdapter, instagramAdapter];
 
 export async function resolveSharedLink(url: string): Promise<SharedLink | null> {
