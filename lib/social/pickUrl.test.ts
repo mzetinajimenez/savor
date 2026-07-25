@@ -1,0 +1,62 @@
+// pickUrl normalizes the two share-target shapes (a dedicated `url` param vs. a free-text `text`
+// blob that merely contains a link) into a single validated URL string, or null. Moved here from
+// app/import/page.tsx (T7) so it's covered by Vitest — the route only collects lib/**, per
+// vitest.config.ts, so a copy left in app/ is untestable by inspection only.
+
+import { describe, expect, it } from "vitest";
+import { pickUrl } from "./pickUrl";
+
+describe("pickUrl", () => {
+  it("passes through a bare valid url unchanged", () => {
+    expect(pickUrl("https://www.instagram.com/reel/abc123/", null)).toBe(
+      "https://www.instagram.com/reel/abc123/"
+    );
+  });
+
+  it("extracts a url embedded in text when url is null", () => {
+    const text = "great tacos https://www.tiktok.com/@user/video/123 go now";
+    expect(pickUrl(null, text)).toBe("https://www.tiktok.com/@user/video/123");
+  });
+
+  it("strips trailing sentence punctuation off a url found in text", () => {
+    expect(pickUrl(null, "check this out https://www.tiktok.com/@user/video/123).")).toBe(
+      "https://www.tiktok.com/@user/video/123"
+    );
+  });
+
+  it("strips a trailing exclamation point off a url found in text", () => {
+    expect(pickUrl(null, "you have to see this reel https://www.instagram.com/reel/abc!")).toBe(
+      "https://www.instagram.com/reel/abc"
+    );
+  });
+
+  it("falls back to text when url is invalid but text contains a usable url", () => {
+    const text = "not a link but https://www.instagram.com/reel/xyz789/ is";
+    expect(pickUrl("not-a-url", text)).toBe("https://www.instagram.com/reel/xyz789/");
+  });
+
+  it("returns null when neither url nor text yields a usable link", () => {
+    expect(pickUrl("not-a-url", "no link in here at all")).toBeNull();
+  });
+
+  it("returns null for a plain non-url string with no http(s) link anywhere", () => {
+    expect(pickUrl(null, "just some caption text, no link")).toBeNull();
+  });
+
+  it("returns null when both url and text are null", () => {
+    expect(pickUrl(null, null)).toBeNull();
+  });
+
+  // pickUrl only checks that new URL() accepts the string — it does NOT enforce http(s). The
+  // http(s)-only restriction lives at the repo layer (lib/repo.ts's placeFields.sourceUrl), not
+  // here, so a non-http string that new URL() happens to accept as a bare `url` param passes
+  // through unchanged. (The regex path can never surface this: it only ever matches literal
+  // "https?://" text, so a javascript:/data: URI embedded in `text` is never extracted at all.)
+  it("passes a non-http scheme through unchanged when new URL() accepts it as a bare url param", () => {
+    expect(pickUrl("javascript:alert(1)", null)).toBe("javascript:alert(1)");
+  });
+
+  it("never extracts a non-http scheme from text (the regex only matches http/https)", () => {
+    expect(pickUrl(null, "click this javascript:alert(1) now")).toBeNull();
+  });
+});

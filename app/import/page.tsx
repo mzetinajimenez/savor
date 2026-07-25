@@ -15,6 +15,10 @@
 // lives in the root layout, not this page — ends up sitting over the Places tab. Emit MUST
 // happen before the replace: AddPlaceHost is mounted in app/layout.tsx, which persists across
 // the client-side navigation, but the event only reaches a listener that's already attached.
+// runImport emits only after `await resolveSharedLink(...)` rather than synchronously precisely
+// because that defer past the synchronous passive-effect flush is what lets AddPlaceHost's
+// listener attach first on a cold load — emitting synchronously on any fast-path would drop the
+// prefill instead.
 //
 // Build note: useSearchParams() makes this route dynamic, and Next.js requires the component
 // that calls it to sit inside a <Suspense> boundary or the production build fails outright
@@ -25,40 +29,8 @@
 import { useEffect, useMemo, useRef, useState, Suspense, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolveSharedLink } from "@/lib/social";
+import { pickUrl } from "@/lib/social/pickUrl";
 import { emitAddPlace } from "@/app/components/ui";
-
-// Pure + exported so it stays this route's one testable-by-inspection unit even though (per the
-// plan) app/ routes aren't under Vitest's jsdom-free collection. Guarantees anything this route
-// ever hands to emitAddPlace as `sourceUrl` is a URL `new URL()` already accepted — createPlace
-// zod-validates `sourceUrl` as a URL at save, so a bad string here would only surface as a
-// rejected save several steps later.
-export function pickUrl(url: string | null, text: string | null): string | null {
-  if (url && isValidUrl(url)) return url;
-  if (text) {
-    const match = text.match(/https?:\/\/\S+/);
-    if (match) {
-      const stripped = stripTrailingPunctuation(match[0]);
-      if (isValidUrl(stripped)) return stripped;
-    }
-  }
-  return null;
-}
-
-function isValidUrl(value: string): boolean {
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Trims punctuation a sentence tends to glue onto a trailing URL ("...check it out!" or a
-// link in parens) so the URL parse above isn't tripped up by a stray character that was never
-// part of the link.
-function stripTrailingPunctuation(value: string): string {
-  return value.replace(/[.,;:!?)\]}'"]+$/, "");
-}
 
 export default function ImportPage() {
   return (
