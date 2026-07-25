@@ -6,13 +6,24 @@
 
 import type { ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
+import type { SocialPlatform } from "@/lib/social/types";
 
 // The FAB (and any empty-state "Add a place" button) announce intent via a window event;
 // T8's add-place flow listens for it. Single source of truth for the event name.
 export const ADD_PLACE_EVENT = "savor:add-place";
 
-export function emitAddPlace() {
-  window.dispatchEvent(new CustomEvent(ADD_PLACE_EVENT));
+// Optional payload for a prefilled open (e.g. from the /import share-link route, T7). All
+// fields are optional so a bare emitAddPlace() — the FAB / empty-state "Add a place" path —
+// keeps opening a blank sheet exactly as before.
+export interface PlacePrefill {
+  name?: string;
+  sourceUrl?: string;
+  sourcePlatform?: SocialPlatform;
+  autoLookup?: boolean;
+}
+
+export function emitAddPlace(prefill?: PlacePrefill) {
+  window.dispatchEvent(new CustomEvent(ADD_PLACE_EVENT, { detail: prefill }));
 }
 
 /* ─── HeaderShell ─────────────────────────────────────────────────────────
@@ -124,7 +135,7 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
   return (
     <button
       type="button"
-      onClick={emitAddPlace}
+      onClick={() => emitAddPlace()}
       className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
     >
       <PlusGlyph className="h-4 w-4" />

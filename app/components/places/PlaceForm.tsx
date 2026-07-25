@@ -9,16 +9,20 @@
 //
 // Event contract (documented here since there's no other single place for it): the nav FAB and
 // any "Add a place" empty-state button call `emitAddPlace()` (app/components/ui.tsx), which
-// dispatches a bare `window` CustomEvent named by `ADD_PLACE_EVENT` — no payload, just an open
-// signal. AddPlaceHost is the sole listener: `addEventListener` on mount, `removeEventListener`
-// on cleanup. Any number of emitters, exactly one listener.
+// dispatches a `window` CustomEvent named by `ADD_PLACE_EVENT` carrying an optional
+// `PlacePrefill` in `detail` — undefined for the plain FAB/empty-state path, populated when the
+// /import share-link route (T7) wants the sheet to open pre-seeded. AddPlaceHost is the sole
+// listener: `addEventListener` on mount, `removeEventListener` on cleanup. Any number of
+// emitters, exactly one listener.
 //
-// Flow inside one sheet: name (required) -> optional OSM lookup (tap a result to autofill
-// name/address/city/lat/lng) -> been/want_to_try status toggle (default "been") -> optional
-// cuisine/notes -> category checkboxes (useCategories) -> if status is "been", one skippable
-// RatingRow per live criterion (useCriteria) -> Save builds the ratings record from whichever
-// rows were touched and makes exactly one repo.createPlace call. Cancel / the sheet's own
-// close button / backdrop tap all close without saving (Sheet's onClose, unchanged).
+// Flow inside one sheet: name (required, optionally pre-seeded) -> optional OSM lookup (tap a
+// result to autofill name/address/city/lat/lng; auto-run once on mount when the prefill asks
+// for it) -> been/want_to_try status toggle (default "been", or "want_to_try" when opened from
+// a prefill) -> optional cuisine/notes -> category checkboxes (useCategories) -> if status is
+// "been", one skippable RatingRow per live criterion (useCriteria) -> Save builds the ratings
+// record from whichever rows were touched and makes exactly one repo.createPlace call (carrying
+// sourceUrl/sourcePlatform through when present). Cancel / the sheet's own close button /
+// backdrop tap all close without saving (Sheet's onClose, unchanged).
 
 import { useEffect, useState } from "react";
 import { useCategories, useCriteria } from "@/lib/hooks";
@@ -27,12 +31,12 @@ import { createPlace } from "@/lib/repo";
 import type { PlaceStatus } from "@/lib/types";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
-import { ADD_PLACE_EVENT, Chip, RatingRow } from "../ui";
+import { ADD_PLACE_EVENT, Chip, RatingRow, type PlacePrefill } from "../ui";
 
-function emptyForm() {
+function emptyForm(initial?: PlacePrefill) {
   return {
-    name: "",
-    status: "been" as PlaceStatus,
+    name: initial?.name ?? "",
+    status: (initial ? "want_to_try" : "been") as PlaceStatus,
     cuisine: "",
     notes: "",
     address: undefined as string | undefined,
@@ -41,14 +45,18 @@ function emptyForm() {
     lng: undefined as number | undefined,
     categoryIds: [] as string[],
     ratings: {} as Record<string, number>,
+    sourceUrl: initial?.sourceUrl,
+    sourcePlatform: initial?.sourcePlatform,
   };
 }
 
 export function AddPlaceHost() {
   const [open, setOpen] = useState(false);
+  const [prefill, setPrefill] = useState<PlacePrefill | undefined>(undefined);
 
   useEffect(() => {
-    function handleOpen() {
+    function handleOpen(e: Event) {
+      setPrefill((e as CustomEvent<PlacePrefill | undefined>).detail);
       setOpen(true);
     }
     window.addEventListener(ADD_PLACE_EVENT, handleOpen);
@@ -58,14 +66,20 @@ export function AddPlaceHost() {
   // Mounted only while open, so every fresh open gets a fresh AddPlaceSheet instance (and thus
   // fresh state) — no explicit "reset the form" step required on close.
   if (!open) return null;
-  return <AddPlaceSheet onClose={() => setOpen(false)} />;
+  return <AddPlaceSheet onClose={() => setOpen(false)} initial={prefill} />;
 }
 
-function AddPlaceSheet({ onClose }: { onClose: () => void }) {
+function AddPlaceSheet({
+  onClose,
+  initial,
+}: {
+  onClose: () => void;
+  initial?: PlacePrefill;
+}) {
   const categories = useCategories();
   const criteria = useCriteria();
 
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(() => emptyForm(initial));
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
   const [searched, setSearched] = useState(false);
@@ -86,6 +100,18 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
     setSearched(true);
     setLookupLoading(false);
   }
+
+  useEffect(() => {
+    // Run the OSM lookup once, on mount, when opened from a prefill that asks for it (share-link
+    // import) — lands the user straight on the geocode picker. This is a one-shot mount kick-off
+    // (not a subscription loop), so handleLookup's own synchronous setLookupLoading/setSearched
+    // calls are the intended, one-time behavior the cascading-render check is guarding against.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initial?.autoLookup && initial.name) void handleLookup();
+    // Deliberately not in a dep array: this must fire exactly once per fresh sheet instance, not
+    // re-fire as `initial`/`handleLookup` identity changes across re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleSelectResult(result: LookupResult) {
     setForm((f) => ({
@@ -133,6 +159,8 @@ function AddPlaceSheet({ onClose }: { onClose: () => void }) {
         notes: form.notes.trim() || undefined,
         categoryIds: form.categoryIds,
         ratings: form.status === "been" ? form.ratings : {},
+        sourceUrl: form.sourceUrl,
+        sourcePlatform: form.sourcePlatform,
       });
       toast(`Added ${trimmedName}`);
       onClose();
