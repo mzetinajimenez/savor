@@ -183,7 +183,12 @@ function PasteForm({
           </label>
           <input
             id="import-url"
-            type="url"
+            // type="text" (not "url") on purpose: a shared paste often carries the link inside
+            // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
+            // type="url" field marks that whole string :invalid and native validation blocks the
+            // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
+            // keyboard; validation is ours (pickUrl → the hint below).
+            type="text"
             inputMode="url"
             autoComplete="off"
             autoFocus
