@@ -116,6 +116,34 @@ describe("createPlace", () => {
       createPlace({ name: "X", status: "been", sourceUrl: "not-a-url" })
     ).rejects.toThrow();
   });
+
+  // Security hardening: sourceUrl is a permalink meant to be linked back to (a future
+  // "view original post" <a href={sourceUrl}>), so non-http(s) schemes must be rejected at the
+  // schema level even though nothing renders it as an href yet.
+  it("rejects a javascript: sourceUrl", async () => {
+    await expect(
+      createPlace({ name: "X", status: "been", sourceUrl: "javascript:alert(1)" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects a data: sourceUrl", async () => {
+    await expect(
+      createPlace({
+        name: "X",
+        status: "been",
+        sourceUrl: "data:text/html,<script>alert(1)</script>",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("accepts a normal https sourceUrl", async () => {
+    const place = await createPlace({
+      name: "X",
+      status: "been",
+      sourceUrl: "https://www.instagram.com/reel/abc123/",
+    });
+    expect(place.sourceUrl).toBe("https://www.instagram.com/reel/abc123/");
+  });
 });
 
 describe("updatePlace", () => {
