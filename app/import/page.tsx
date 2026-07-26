@@ -30,7 +30,7 @@ import { useEffect, useMemo, useRef, useState, Suspense, type FormEvent } from "
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
-import { emitAddPlace } from "@/app/components/ui";
+import { emitAddPlace, PasteLinkField } from "@/app/components/ui";
 
 export default function ImportPage() {
   return (
@@ -101,15 +101,29 @@ function ImportInner() {
   if (importing) return <Importing />;
 
   return (
-    <PasteForm
-      value={pasteValue}
-      onChange={(v) => {
-        setPasteValue(v);
-        setPasteHint(false);
-      }}
-      onSubmit={handlePasteSubmit}
-      showHint={pasteHint}
-    />
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-sm text-center">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
+          savor
+        </p>
+        <h1 className="mt-0.5 font-display text-3xl leading-none text-plum">Import a place</h1>
+        <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-soft">
+          Paste an Instagram or TikTok link and we&rsquo;ll get it started.
+        </p>
+
+        <div className="mt-6">
+          <PasteLinkField
+            value={pasteValue}
+            onChange={(v) => {
+              setPasteValue(v);
+              setPasteHint(false);
+            }}
+            onSubmit={handlePasteSubmit}
+            showHint={pasteHint}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -121,66 +135,6 @@ function Importing() {
         className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-plum"
       />
       <p className="text-[0.95rem] text-ink-soft">Importing…</p>
-    </div>
-  );
-}
-
-function PasteForm({
-  value,
-  onChange,
-  onSubmit,
-  showHint,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: (e: FormEvent) => void;
-  showHint: boolean;
-}) {
-  const canSubmit = value.trim().length > 0;
-
-  return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="w-full max-w-sm text-center">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
-          savor
-        </p>
-        <h1 className="mt-0.5 font-display text-3xl leading-none text-plum">Import a place</h1>
-        <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-soft">
-          Paste an Instagram or TikTok link and we&rsquo;ll get it started.
-        </p>
-
-        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3 text-left">
-          <label htmlFor="import-url" className="sr-only">
-            Instagram or TikTok link
-          </label>
-          <input
-            id="import-url"
-            // type="text" (not "url") on purpose: a shared paste often carries the link inside
-            // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
-            // type="url" field marks that whole string :invalid and native validation blocks the
-            // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
-            // keyboard; validation is ours (pickUrl → the hint below).
-            type="text"
-            inputMode="url"
-            autoComplete="off"
-            autoFocus
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Paste an Instagram or TikTok link"
-            className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
-          />
-          {showHint ? (
-            <p className="text-sm text-chili">That doesn&rsquo;t look like a link — try pasting the full URL.</p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
-          >
-            Find place
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

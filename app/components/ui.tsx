@@ -4,7 +4,7 @@
 // display + local-interaction components. The visual language ("Cellar"): clay parchment
 // surfaces, wine-plum structure, ember action, gold score seals, Instrument Serif display.
 
-import type { ReactNode } from "react";
+import { useId, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
 import type { SocialPlatform } from "@/lib/social/types";
 
@@ -141,6 +141,69 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
       <PlusGlyph className="h-4 w-4" />
       {label}
     </button>
+  );
+}
+
+/* ─── PasteLinkField ─────────────────────────────────────────────────────────
+   Controlled paste-a-link form: label + text input + optional "doesn't look
+   like a link" hint + submit button. Shared by /import's paste screen and
+   PlaceForm's inline paste affordance so the two entry points into the same
+   resolve flow never drift apart. `variant` controls only the button's visual
+   weight — "primary" (default) is /import's full-page ember button; the
+   "secondary" outline style is for use inside PlaceForm's sheet, where Save
+   is the true primary action. */
+export function PasteLinkField({
+  value,
+  onChange,
+  onSubmit,
+  showHint,
+  submitting = false,
+  variant = "primary",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  showHint: boolean;
+  submitting?: boolean;
+  variant?: "primary" | "secondary";
+}) {
+  const inputId = useId();
+  const canSubmit = value.trim().length > 0 && !submitting;
+  const buttonClass =
+    variant === "primary"
+      ? "min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60";
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
+      <label htmlFor={inputId} className="sr-only">
+        Instagram or TikTok link
+      </label>
+      <input
+        id={inputId}
+        // type="text" (not "url") on purpose: a shared paste often carries the link inside
+        // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
+        // type="url" field marks that whole string :invalid and native validation blocks the
+        // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
+        // keyboard; validation is ours (pickUrl → the hint below).
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Paste an Instagram or TikTok link"
+        className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+      />
+      {showHint ? (
+        <p className="text-sm text-chili">
+          That doesn&rsquo;t look like a link — try pasting the full URL.
+        </p>
+      ) : null}
+      <button type="submit" disabled={!canSubmit} className={buttonClass}>
+        {submitting ? "Finding place…" : "Find place"}
+      </button>
+    </form>
   );
 }
 
