@@ -24,14 +24,16 @@
 // sourceUrl/sourcePlatform through when present). Cancel / the sheet's own close button /
 // backdrop tap all close without saving (Sheet's onClose, unchanged).
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useCategories, useCriteria } from "@/lib/hooks";
 import { searchPlaces, type LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
+import { resolveSharedLink } from "@/lib/social";
+import { pickUrl } from "@/lib/social/pickUrl";
 import type { PlaceStatus } from "@/lib/types";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
-import { ADD_PLACE_EVENT, Chip, RatingRow, type PlacePrefill } from "../ui";
+import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
 
 function emptyForm(initial?: PlacePrefill) {
   return {
@@ -85,20 +87,54 @@ function AddPlaceSheet({
   const [searched, setSearched] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteValue, setPasteValue] = useState("");
+  const [pasteHint, setPasteHint] = useState(false);
+  const [resolving, setResolving] = useState(false);
+
   const trimmedName = form.name.trim();
   const canSave = trimmedName.length > 0 && !saving;
 
-  async function handleLookup() {
-    if (!trimmedName || lookupLoading) return;
+  async function runLookup(name: string) {
+    if (!name || lookupLoading) return;
     setLookupLoading(true);
     setSearched(false);
     // searchPlaces degrades to [] on any failure (bad shape, non-200, network throw) — a failed
     // lookup and a lookup with no matches look identical here, both land on the "nothing found"
     // hint below, and the form stays fully usable manually either way.
-    const results = await searchPlaces(trimmedName);
+    const results = await searchPlaces(name);
     setLookupResults(results);
     setSearched(true);
     setLookupLoading(false);
+  }
+
+  async function handleLookup() {
+    await runLookup(trimmedName);
+  }
+
+  async function handlePasteResolve(e: FormEvent) {
+    e.preventDefault();
+    const candidate = pickUrl(pasteValue, pasteValue);
+    if (!candidate) {
+      setPasteHint(true);
+      return;
+    }
+    setPasteHint(false);
+    setResolving(true);
+    // resolveSharedLink never throws — an unrecognized platform returns null, and each
+    // adapter's hydrate() degrades to a URL-only result on any fetch/parse failure (see
+    // lib/social/tiktok.ts and lib/social/instagram.ts).
+    const link = await resolveSharedLink(candidate);
+    setForm((f) => ({
+      ...f,
+      name: link?.nameGuess ?? f.name,
+      sourceUrl: link?.url ?? candidate,
+      sourcePlatform: link?.platform,
+    }));
+    setResolving(false);
+    setPasteOpen(false);
+    setPasteValue("");
+    if (link?.nameGuess) void runLookup(link.nameGuess);
   }
 
   useEffect(() => {
@@ -203,6 +239,32 @@ function AddPlaceSheet({
               ? "Imported from TikTok"
               : "Source link attached"}
           </p>
+        ) : null}
+
+        {!form.sourceUrl ? (
+          <div>
+            {pasteOpen ? (
+              <PasteLinkField
+                value={pasteValue}
+                onChange={(v) => {
+                  setPasteValue(v);
+                  setPasteHint(false);
+                }}
+                onSubmit={handlePasteResolve}
+                showHint={pasteHint}
+                submitting={resolving}
+                variant="secondary"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPasteOpen(true)}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line"
+              >
+                Paste a link
+              </button>
+            )}
+          </div>
         ) : null}
 
         {/* Name + OSM lookup */}
