@@ -5,18 +5,21 @@
 > **Read first:** `docs/superpowers/specs/2026-07-25-share-import-ux-design.md` (the approved
 > design this plan implements). Continues the work from
 > `docs/superpowers/plans/2026-07-23-share-link-import-plan.md` (T1–T8); tasks here are numbered
-> T9–T11 to follow on from that plan.
+> T9–T12 to follow on from that plan.
 
 **Goal:** Make the already-shipped share-link import feature (T1–T8) actually reachable and
 legible: an in-app "Paste a link" entry point for platforms without Web Share Target (iOS
 Safari never implements it), visible confirmation when a link resolves, and a way to get back
 to the source video/post after saving.
 
-**Architecture:** Reuse the existing framework-free `lib/social` primitives
-(`pickUrl`, `resolveSharedLink`) directly inside `PlaceForm.tsx` — no new abstraction layer, no
-changes to `/import/page.tsx` or the `ADD_PLACE_EVENT`/`PlacePrefill` contract. The detail-page
-and list-card changes are pure read-only rendering of fields (`Place.sourceUrl`,
-`Place.sourcePlatform`) that already persist correctly today.
+**Architecture:** Reuse the existing framework-free `lib/social` primitives (`pickUrl`,
+`resolveSharedLink`) directly inside `PlaceForm.tsx` — no new logic layer. The paste-box UI
+itself (input + hint + submit) is extracted once into a shared `PasteLinkField` component
+(`app/components/ui.tsx`) so `/import/page.tsx` and `PlaceForm.tsx` never duplicate that markup
+— `/import/page.tsx` gets one scoped, behavior-preserving refactor to use it (T10); its resolve
+logic, the `ADD_PLACE_EVENT`/`PlacePrefill` contract, and everything else about it are
+untouched. The detail-page and list-card changes are pure read-only rendering of fields
+(`Place.sourceUrl`, `Place.sourcePlatform`) that already persist correctly today.
 
 **Tech Stack:** Next.js App Router, React 19, TypeScript strict, Tailwind v4 (Cellar tokens),
 no new npm dependencies.
@@ -26,7 +29,11 @@ no new npm dependencies.
 - No `lib/` logic changes — `pickUrl` (`lib/social/pickUrl.ts`) and `resolveSharedLink`
   (`lib/social/index.ts`) are reused exactly as they exist today. No new Vitest coverage is
   required for this work (spec §3.5).
-- No changes to `app/import/page.tsx` or the `ADD_PLACE_EVENT`/`PlacePrefill` contract (spec §2).
+- `app/import/page.tsx` gets exactly one scoped change (T10: extracting its paste-box markup
+  into the shared `PasteLinkField`) — a pure refactor with zero behavior change. This
+  supersedes the design spec's "no changes to `/import/page.tsx`" line; confirmed with the user
+  during plan pre-flight, who chose this over accepting duplicated markup. The
+  `ADD_PLACE_EVENT`/`PlacePrefill` contract is untouched by any task in this plan.
 - No changes to TikTok's existing oEmbed/name-guess path (spec §2).
 - No auto-save-on-resolve — the sheet stays "review and finish, then Save" for both platforms
   (spec §2).
@@ -53,7 +60,7 @@ no new npm dependencies.
 
 **Interfaces:**
 - Consumes: `form.sourceUrl: string | undefined`, `form.sourcePlatform: "instagram" | "tiktok" | undefined` — both already exist on `AddPlaceSheet`'s local `form` state (populated today via `initial?.sourceUrl`/`initial?.sourcePlatform` in `emptyForm`, unchanged by this task).
-- Produces: nothing new — this task only adds rendering. T10 will rely on the fact that this block already renders whenever `form.sourceUrl` is set, regardless of how it got set.
+- Produces: nothing new — this task only adds rendering. T11 will rely on the fact that this block already renders whenever `form.sourceUrl` is set, regardless of how it got set.
 
 This task is independently testable today because the `/import?url=...` prefill path (T7,
 already shipped) already sets `form.sourceUrl`/`form.sourcePlatform` — no new state or handler
@@ -119,23 +126,307 @@ git commit -m "feat(import): show which platform a source link came from in the 
 
 ---
 
-### T10 — Inline "Paste a link" affordance in the blank Add-place sheet
+### T10 — Extract shared `PasteLinkField`; `/import/page.tsx` uses it
 
 **Files:**
-- Modify: `app/components/places/PlaceForm.tsx` (imports; `AddPlaceSheet`'s lookup handler; new state/handler; new JSX section)
+- Modify: `app/components/ui.tsx` (new `PasteLinkField`, after `AddPlaceButton`)
+- Modify: `app/import/page.tsx` (imports; replace the local `PasteForm` function with the shared component; page-level chrome stays where it is)
+
+**Interfaces:**
+- Consumes: nothing new — this task relocates existing markup and behavior, it does not add any.
+- Produces: `PasteLinkField({ value: string; onChange: (value: string) => void; onSubmit: (e: FormEvent) => void; showHint: boolean; submitting?: boolean; variant?: "primary" | "secondary" }): JSX.Element`, exported from `app/components/ui.tsx`. `variant` defaults to `"primary"` (the ember-filled, full-width button `/import` already uses — this task's own usage doesn't pass it, so `/import`'s look is byte-for-byte unchanged). T11 (the new inline paste affordance in `PlaceForm.tsx`) will pass `variant="secondary"` to get the outline-style button matching that sheet's existing "Look up" button, and `submitting` to show a busy label while `resolveSharedLink` is in flight.
+
+This is a pure refactor, not a behavior change: `/import/page.tsx`'s paste screen must look and
+behave identically before and after this task. It is a scoped exception to the design spec's
+"no changes to `/import/page.tsx`" line (see Global Constraints above) — confirmed with the
+user, who chose this extraction over letting T11 duplicate this markup.
+
+- [ ] **Step 1: Add `PasteLinkField` to `app/components/ui.tsx`**
+
+Update the top imports — replace:
+
+```tsx
+import type { ReactNode } from "react";
+```
+
+with:
+
+```tsx
+import { useId, type FormEvent, type ReactNode } from "react";
+```
+
+Then, immediately after the `AddPlaceButton` function's closing brace (before the `ScoreBadge`
+comment block), add:
+
+```tsx
+/* ─── PasteLinkField ─────────────────────────────────────────────────────────
+   Controlled paste-a-link form: label + text input + optional "doesn't look
+   like a link" hint + submit button. Shared by /import's paste screen and
+   PlaceForm's inline paste affordance so the two entry points into the same
+   resolve flow never drift apart. `variant` controls only the button's visual
+   weight — "primary" (default) is /import's full-page ember button; the
+   "secondary" outline style is for use inside PlaceForm's sheet, where Save
+   is the true primary action. */
+export function PasteLinkField({
+  value,
+  onChange,
+  onSubmit,
+  showHint,
+  submitting = false,
+  variant = "primary",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  showHint: boolean;
+  submitting?: boolean;
+  variant?: "primary" | "secondary";
+}) {
+  const inputId = useId();
+  const canSubmit = value.trim().length > 0 && !submitting;
+  const buttonClass =
+    variant === "primary"
+      ? "min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60";
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
+      <label htmlFor={inputId} className="sr-only">
+        Instagram or TikTok link
+      </label>
+      <input
+        id={inputId}
+        // type="text" (not "url") on purpose: a shared paste often carries the link inside
+        // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
+        // type="url" field marks that whole string :invalid and native validation blocks the
+        // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
+        // keyboard; validation is ours (pickUrl → the hint below).
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Paste an Instagram or TikTok link"
+        className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+      />
+      {showHint ? (
+        <p className="text-sm text-chili">
+          That doesn&rsquo;t look like a link — try pasting the full URL.
+        </p>
+      ) : null}
+      <button type="submit" disabled={!canSubmit} className={buttonClass}>
+        {submitting ? "Finding place…" : "Find place"}
+      </button>
+    </form>
+  );
+}
+```
+
+- [ ] **Step 2: Refactor `app/import/page.tsx` to use it**
+
+Update the import (currently line 33):
+
+```tsx
+import { emitAddPlace } from "@/app/components/ui";
+```
+
+to:
+
+```tsx
+import { emitAddPlace, PasteLinkField } from "@/app/components/ui";
+```
+
+Then replace `ImportInner`'s final return plus the now-redundant local `PasteForm` function —
+currently:
+
+```tsx
+  if (importing) return <Importing />;
+
+  return (
+    <PasteForm
+      value={pasteValue}
+      onChange={(v) => {
+        setPasteValue(v);
+        setPasteHint(false);
+      }}
+      onSubmit={handlePasteSubmit}
+      showHint={pasteHint}
+    />
+  );
+}
+
+function Importing() {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-center">
+      <span
+        aria-hidden
+        className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-plum"
+      />
+      <p className="text-[0.95rem] text-ink-soft">Importing…</p>
+    </div>
+  );
+}
+
+function PasteForm({
+  value,
+  onChange,
+  onSubmit,
+  showHint,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  showHint: boolean;
+}) {
+  const canSubmit = value.trim().length > 0;
+
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-sm text-center">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
+          savor
+        </p>
+        <h1 className="mt-0.5 font-display text-3xl leading-none text-plum">Import a place</h1>
+        <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-soft">
+          Paste an Instagram or TikTok link and we&rsquo;ll get it started.
+        </p>
+
+        <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3 text-left">
+          <label htmlFor="import-url" className="sr-only">
+            Instagram or TikTok link
+          </label>
+          <input
+            id="import-url"
+            // type="text" (not "url") on purpose: a shared paste often carries the link inside
+            // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
+            // type="url" field marks that whole string :invalid and native validation blocks the
+            // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
+            // keyboard; validation is ours (pickUrl → the hint below).
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            autoFocus
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Paste an Instagram or TikTok link"
+            className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+          />
+          {showHint ? (
+            <p className="text-sm text-chili">That doesn&rsquo;t look like a link — try pasting the full URL.</p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
+          >
+            Find place
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+```
+
+with:
+
+```tsx
+  if (importing) return <Importing />;
+
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-sm text-center">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
+          savor
+        </p>
+        <h1 className="mt-0.5 font-display text-3xl leading-none text-plum">Import a place</h1>
+        <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-soft">
+          Paste an Instagram or TikTok link and we&rsquo;ll get it started.
+        </p>
+
+        <div className="mt-6">
+          <PasteLinkField
+            value={pasteValue}
+            onChange={(v) => {
+              setPasteValue(v);
+              setPasteHint(false);
+            }}
+            onSubmit={handlePasteSubmit}
+            showHint={pasteHint}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Importing() {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-center">
+      <span
+        aria-hidden
+        className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-plum"
+      />
+      <p className="text-[0.95rem] text-ink-soft">Importing…</p>
+    </div>
+  );
+}
+```
+
+(The local `PasteForm` function is gone entirely — `Importing` is now the last thing in the
+file. `type FormEvent` stays imported at the top of `app/import/page.tsx`: `handlePasteSubmit`
+still uses it.)
+
+- [ ] **Step 3: Build check**
+
+Run: `npm run build`
+Expected: build succeeds, no TypeScript/JSX errors.
+
+- [ ] **Step 4: Manual verification — confirm zero behavior change**
+
+Run: `npm run dev`, then in a browser, re-run `/import`'s existing scenarios to confirm nothing
+moved:
+
+1. Visit `http://localhost:3000/import` (no params) — confirm the paste screen looks identical
+   to before (same heading/copy, same input, focused, same full-width ember "Find place"
+   button, disabled while empty).
+2. Type `not a link`, tap "Find place" — confirm the same hint text appears.
+3. Type `https://www.instagram.com/reel/TestReel321/`, tap "Find place" — confirm it resolves
+   to `/` with the Add-place sheet open (T9's "Imported from Instagram" line, from the earlier
+   task, should show here too).
+
+- [ ] **Step 5: Full regression check**
+
+Run: `npm test && npm run lint`
+Expected: all existing tests pass, no lint errors.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/components/ui.tsx app/import/page.tsx
+git commit -m "refactor(import): extract PasteLinkField shared by /import and the add-place sheet"
+```
+
+---
+
+### T11 — Inline "Paste a link" affordance in the blank Add-place sheet
+
+**Files:**
+- Modify: `app/components/places/PlaceForm.tsx` (imports; `AddPlaceSheet`'s lookup handler; new state/handler; new JSX section using `PasteLinkField`)
 
 **Interfaces:**
 - Consumes: `pickUrl(url: string | null, text: string | null): string | null` from
   `@/lib/social/pickUrl`; `resolveSharedLink(url: string): Promise<SharedLink | null>` from
   `@/lib/social`, where `SharedLink` has `{ platform: "instagram" | "tiktok"; url: string;
-  nameGuess?: string }` (`lib/social/types.ts`) — both used exactly as `/import/page.tsx`
-  already uses them, untouched.
+  nameGuess?: string }` (`lib/social/types.ts`); `PasteLinkField` from `../ui` (T10's new
+  export, signature above).
 - Produces: `form.sourceUrl` / `form.sourcePlatform` / `form.name` get set on a successful
   resolve, which T9's confirmation line (already in place) renders immediately, and which the
   existing `handleSave` (unchanged) writes through `createPlace` on Save.
 
 This task depends on T9 (the confirmation line must already exist so this task's own manual
-verification has something to observe).
+verification has something to observe) and T10 (`PasteLinkField` must already exist).
 
 - [ ] **Step 1: Add imports**
 
@@ -147,6 +438,9 @@ import { useCategories, useCriteria } from "@/lib/hooks";
 import { searchPlaces, type LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
 import type { PlaceStatus } from "@/lib/types";
+import Sheet from "../Sheet";
+import { toast } from "../Toast";
+import { ADD_PLACE_EVENT, Chip, RatingRow, type PlacePrefill } from "../ui";
 ```
 
 with:
@@ -159,6 +453,9 @@ import { createPlace } from "@/lib/repo";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
 import type { PlaceStatus } from "@/lib/types";
+import Sheet from "../Sheet";
+import { toast } from "../Toast";
+import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
 ```
 
 - [ ] **Step 2: Factor the lookup body so it can take an explicit name**
@@ -278,40 +575,17 @@ Name block:
         {!form.sourceUrl ? (
           <div>
             {pasteOpen ? (
-              <form onSubmit={handlePasteResolve} className="flex flex-col gap-2">
-                <label htmlFor="place-paste-url" className="text-sm font-semibold text-ink-soft">
-                  Instagram or TikTok link
-                </label>
-                <input
-                  id="place-paste-url"
-                  // type="text" (not "url") on purpose — same reasoning as /import's PasteForm:
-                  // a pasted caption often carries the link inline, and pickUrl extracts it, but
-                  // type="url" would block submission via native validation first.
-                  type="text"
-                  inputMode="url"
-                  autoComplete="off"
-                  autoFocus
-                  value={pasteValue}
-                  onChange={(e) => {
-                    setPasteValue(e.target.value);
-                    setPasteHint(false);
-                  }}
-                  placeholder="Paste an Instagram or TikTok link"
-                  className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
-                />
-                {pasteHint ? (
-                  <p className="text-sm text-chili">
-                    That doesn&rsquo;t look like a link — try pasting the full URL.
-                  </p>
-                ) : null}
-                <button
-                  type="submit"
-                  disabled={pasteValue.trim().length === 0 || resolving}
-                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60"
-                >
-                  {resolving ? "Finding place…" : "Find place"}
-                </button>
-              </form>
+              <PasteLinkField
+                value={pasteValue}
+                onChange={(v) => {
+                  setPasteValue(v);
+                  setPasteHint(false);
+                }}
+                onSubmit={handlePasteResolve}
+                showHint={pasteHint}
+                submitting={resolving}
+                variant="secondary"
+              />
             ) : (
               <button
                 type="button"
@@ -338,8 +612,10 @@ Expected: build succeeds, no TypeScript/JSX errors.
 Run: `npm run dev`, then in a browser:
 
 1. Visit `http://localhost:3000/`, tap the ember "+" FAB.
-2. Confirm a **"Paste a link"** button appears above the Name field (no confirmation line yet).
-3. Tap it — confirm a text field + "Find place" button appear, input focused.
+2. Confirm a **"Paste a link"** button (outline style) appears above the Name field (no
+   confirmation line yet).
+3. Tap it — confirm the shared paste field + outline-style "Find place" button appear, input
+   focused.
 4. Type `not a link` and tap "Find place" — confirm the hint "That doesn't look like a link —
    try pasting the full URL." appears and the field stays open.
 5. Replace the text with `https://www.instagram.com/reel/TestReel456/` and tap "Find place" —
@@ -353,6 +629,9 @@ Run: `npm run dev`, then in a browser:
    correct; only the confirmation line and successful resolve are being checked here.
 7. Confirm the existing "Look up" button (unrelated to this change) still works normally when
    typing a name manually with no pasted link.
+8. Re-visit `http://localhost:3000/import` directly and confirm its paste screen still looks
+   and behaves exactly as verified in T10 (same full-width ember button there, not the outline
+   style — confirming `variant` correctly differs by call site).
 
 - [ ] **Step 7: Full regression check**
 
@@ -368,7 +647,7 @@ git commit -m "feat(import): add inline paste-a-link entry point to the add-plac
 
 ---
 
-### T11 — Surface `sourceUrl` on the place detail page and list card
+### T12 — Surface `sourceUrl` on the place detail page and list card
 
 **Files:**
 - Modify: `app/components/ui.tsx` (new `LinkGlyph`, alongside `PlusGlyph`/`StarGlyph`)
@@ -382,8 +661,8 @@ git commit -m "feat(import): add inline paste-a-link entry point to the add-plac
 - Produces: `LinkGlyph` (exported from `app/components/ui.tsx`) — a decorative glyph, consumed
   by both files below.
 
-This task is independent of T9/T10's internal logic, but its manual verification is easiest
-once T10 exists (to create a test place with a real `sourceUrl` via the in-app UI).
+This task is independent of T9/T10/T11's internal logic, but its manual verification is
+easiest once T11 exists (to create a test place with a real `sourceUrl` via the in-app UI).
 
 - [ ] **Step 1: Add the shared glyph**
 
@@ -519,7 +798,7 @@ Expected: build succeeds, no TypeScript/JSX errors.
 
 Run: `npm run dev`, then in a browser:
 
-1. Using the T10 paste flow (or `/import?url=...`), create a place from
+1. Using the T11 paste flow (or `/import?url=...`), create a place from
    `https://www.instagram.com/reel/TestReel789/`, name it "Source Link Test", and Save.
 2. On the Places list, confirm "Source Link Test" shows the small link glyph next to its status
    pill, and confirm the three seeded places (Katz's Deli, Ramen House, Taco Bravo — no
@@ -551,5 +830,6 @@ git commit -m "feat(places): surface source link on the place detail page and li
 - Instagram caption/geotag name-guessing (Meta's oEmbed requires an authenticated token since
   2020; scraping is unreliable and against their ToS).
 - Any change to TikTok's existing name-guess path.
-- Any change to `/import/page.tsx` or the `ADD_PLACE_EVENT`/`PlacePrefill` contract.
+- Any change to `/import/page.tsx` beyond T10's scoped `PasteLinkField` extraction (its resolve
+  logic and the `ADD_PLACE_EVENT`/`PlacePrefill` contract are untouched).
 - Auto-save-on-resolve for either platform.
