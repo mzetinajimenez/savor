@@ -195,6 +195,16 @@ function AddPlaceSheet({
       }
     >
       <div className="flex flex-col gap-5">
+        {form.sourceUrl ? (
+          <p className="text-sm font-semibold text-plum">
+            {form.sourcePlatform === "instagram"
+              ? "Imported from Instagram"
+              : form.sourcePlatform === "tiktok"
+              ? "Imported from TikTok"
+              : "Source link attached"}
+          </p>
+        ) : null}
+
         {/* Name + OSM lookup */}
         <div>
           <label htmlFor="place-name" className="mb-1 block text-sm font-semibold text-ink-soft">
