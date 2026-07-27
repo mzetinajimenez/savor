@@ -149,6 +149,28 @@ function AddPlaceSheet({
     }));
   }
 
+  // A selection captures lat/lng/osmId alongside the name. If the user then edits the
+  // name, that captured location is almost certainly wrong for the new name — and
+  // unlike every other field here, lat/lng/osmId are never shown or editable anywhere
+  // else in the app (see app/places/[id]/page.tsx's PlaceEditSheet), so a stale value
+  // that slips into a saved Place can never be corrected through any UI. Clearing it on
+  // edit is cheap insurance; the 📍 line below is what lets the user see it happen.
+  function handleNameChange(name: string) {
+    setForm((f) =>
+      f.lat === undefined && f.osmId === undefined
+        ? { ...f, name }
+        : {
+            ...f,
+            name,
+            address: undefined,
+            city: undefined,
+            lat: undefined,
+            lng: undefined,
+            osmId: undefined,
+          }
+    );
+  }
+
   function toggleCategory(id: string) {
     setForm((f) => ({
       ...f,
@@ -266,14 +288,24 @@ function AddPlaceSheet({
           </div>
         ) : null}
 
-        {/* Name + live OSM lookup. The combobox owns both; see LookupCombobox.tsx. */}
-        <LookupCombobox
-          value={form.name}
-          onChange={(name) => setForm((f) => ({ ...f, name }))}
-          onSelect={handleSelectResult}
-          autoLookup={Boolean(initial?.autoLookup && initial.name)}
-          searchNonce={searchNonce}
-        />
+        <div>
+          {/* Name + live OSM lookup. The combobox owns both; see LookupCombobox.tsx. */}
+          <LookupCombobox
+            value={form.name}
+            onChange={handleNameChange}
+            onSelect={handleSelectResult}
+            autoLookup={Boolean(initial?.autoLookup && initial.name)}
+            searchNonce={searchNonce}
+          />
+          {/* The only visible signal that a suggestion's lat/lng/osmId are attached —
+              and why editing the name after selecting one is a legible action (the pin
+              disappears) rather than a silent trap. See handleNameChange above. */}
+          {form.lat !== undefined || form.osmId !== undefined ? (
+            <p className="mt-1.5 text-xs text-ink-soft">
+              📍 {[form.address, form.city].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
+        </div>
 
         {/* Status */}
         <div>

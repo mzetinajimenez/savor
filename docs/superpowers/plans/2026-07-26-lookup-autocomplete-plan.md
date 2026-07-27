@@ -1608,6 +1608,15 @@ bump (which would trip parseBackup's exact-version check)."
 
 ## Task 7: `LookupCombobox` — the ARIA combobox
 
+> **Errata (post-review):** the code block below shipped three defects, fixed in
+> `293b783` and `bf03c28`. The session must be created **and** destroyed inside one
+> effect (React Strict Mode kills a `useMemo`-created session); `results` must also
+> read from the `loading` status or the list blanks on every keystroke; and Escape
+> must use `e.nativeEvent.stopImmediatePropagation()` gated on the list being open,
+> because Next's App Router puts React's root listener and `useModalA11y`'s Escape
+> listener on the same DOM node. **Read `app/components/places/LookupCombobox.tsx`
+> at HEAD, not this block.**
+
 **Files:**
 - Create: `app/components/places/LookupCombobox.tsx`
 
@@ -1976,7 +1985,7 @@ In the `app/components/places/` block, replace the `PlaceForm.tsx` line's descri
 and add the new component:
 
 ```
-│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place)
+│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place); inline ratings
 │       │   ├── LookupCombobox.tsx#   name field + live debounced OSM suggestions (ARIA combobox)
 ```
 

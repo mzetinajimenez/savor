@@ -6,6 +6,15 @@
 [#7 OSM lookup robustness](https://github.com/mzetinajimenez/savor/issues/7)
 **Repo:** git@github.com:mzetinajimenez/savor.git
 
+> **As built (post-implementation):** §8's `LookupSession` interface below lists a
+> `selected()` method that was dropped — searches are driven from the input's
+> `onChange`, and React never fires `onChange` for a programmatic write, so the
+> suppression flag `selected()` would have set was guarding a condition that cannot
+> occur (see Task 7's errata in the implementation plan). The interface also gained a
+> `searchNow()` that isn't listed here, added for the share-link prefill path. And in
+> §5, `MAX_RESULTS` is described as living in `lib/photon.ts`; it actually lives in
+> `lib/lookup.ts` and is imported by `lib/photon.ts`, to avoid an import cycle.
+
 ## 1. Problem
 
 Adding a place today means typing a name, then tapping a **Look up** button, then

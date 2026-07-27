@@ -52,7 +52,7 @@ sabor/
 │       ├── Toast.tsx             # toast() module-level pub/sub + <Toaster/> (no context)
 │       ├── ui.tsx                # presentational primitives — HeaderShell, Chip, EmptyState, ScoreBadge, RatingRow, glyphs
 │       ├── places/
-│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place)
+│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place); inline ratings
 │       │   ├── LookupCombobox.tsx#   name field + live debounced OSM suggestions (ARIA combobox)
 │       │   ├── PlaceCard.tsx     #   place list-row: name, status, ScoreBadge
 │       │   ├── PlaceFilters.tsx  #   status filter chips (All / Been / Want to try)
@@ -78,7 +78,7 @@ sabor/
 │   ├── autocomplete.ts           # lookup sequencing — debounce, abort, stale-discard, cache
 │   ├── backup.ts                 # export / parseBackup / importBackup / summarizeBackup (JSON envelope)
 │   ├── useModalA11y.ts           # focus trap + Escape-to-close + body scroll-lock for overlays
-│   └── *.test.ts                 # Vitest suites: db, repo, hooks, ranking, lookup, photon, autocomplete, backup
+│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup) and lib/social/ (index, parse, pickUrl)
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)

@@ -99,11 +99,13 @@ export function toLookupResults(body: unknown): LookupResult[] {
   if (!Array.isArray(features)) return [];
 
   const results: LookupResult[] = [];
-  for (const feature of features.slice(0, MAX_RESULTS)) {
+  for (const feature of features) {
     const mapped = toLookupResult(feature);
     if (mapped) results.push(mapped);
   }
-  return results;
+  // Sliced after validation, not before: capping the raw `features` array first would
+  // silently yield fewer than MAX_RESULTS if early features were invalid.
+  return results.slice(0, MAX_RESULTS);
 }
 
 // One feature in, one LookupResult or null out. Bad features are dropped individually
@@ -125,9 +127,13 @@ function toLookupResult(raw: unknown): LookupResult | null {
   const lat = Number(coords[1]);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
+  // Both fall back the same way (||, and both trimmed) so an empty-string field from
+  // Photon is treated the same as a missing one in either chain — nothing meaningful
+  // should hinge on which operator a given field happened to use.
   const street = [props.housenumber, props.street].filter(Boolean).join(" ").trim();
-  const address = street || props.locality || undefined;
-  const city = props.city ?? props.locality ?? props.county;
+  const locality = props.locality?.trim() || undefined;
+  const address = street || locality;
+  const city = props.city?.trim() || locality || props.county?.trim();
   const osmId = normaliseOsmId(props);
 
   return {

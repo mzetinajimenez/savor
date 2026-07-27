@@ -45,6 +45,17 @@ describe("readBiasFromHeaders", () => {
     expect(readBiasFromHeaders(headers)).toBeNull();
   });
 
+  // Mirror of the above: the two headers are treated symmetrically, so an empty
+  // longitude with a present latitude must null out too, not just the reverse.
+  it("returns null when the longitude header is empty", () => {
+    const headers = new Headers({
+      "x-vercel-ip-latitude": "30.2672",
+      "x-vercel-ip-longitude": "",
+    });
+
+    expect(readBiasFromHeaders(headers)).toBeNull();
+  });
+
   it("returns null when a header is not a number", () => {
     const headers = new Headers({
       "x-vercel-ip-latitude": "not-a-number",
@@ -58,6 +69,11 @@ describe("readBiasFromHeaders", () => {
     expect(readBiasFromHeaders(new Headers({ "x-vercel-ip-latitude": "30.26" }))).toBeNull();
   });
 
+  // Mirror of the above: longitude alone, with latitude absent entirely.
+  it("returns null when only longitude is present", () => {
+    expect(readBiasFromHeaders(new Headers({ "x-vercel-ip-longitude": "-97.74" }))).toBeNull();
+  });
+
   it("returns null for out-of-range coordinates", () => {
     const badLat = new Headers({
       "x-vercel-ip-latitude": "91",
@@ -66,6 +82,22 @@ describe("readBiasFromHeaders", () => {
     const badLng = new Headers({
       "x-vercel-ip-latitude": "0",
       "x-vercel-ip-longitude": "181",
+    });
+
+    expect(readBiasFromHeaders(badLat)).toBeNull();
+    expect(readBiasFromHeaders(badLng)).toBeNull();
+  });
+
+  // Mirror of the above at the negative boundary — Math.abs() should treat +91/-91
+  // and +181/-181 the same, but that symmetry was only ever exercised on one side.
+  it("returns null for negative out-of-range coordinates", () => {
+    const badLat = new Headers({
+      "x-vercel-ip-latitude": "-91",
+      "x-vercel-ip-longitude": "0",
+    });
+    const badLng = new Headers({
+      "x-vercel-ip-latitude": "0",
+      "x-vercel-ip-longitude": "-181",
     });
 
     expect(readBiasFromHeaders(badLat)).toBeNull();

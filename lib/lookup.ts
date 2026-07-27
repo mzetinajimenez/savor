@@ -23,8 +23,9 @@ export const lookupResultSchema = z.object({
   city: z.string().optional(),
   lat: z.number(),
   lng: z.number(),
-  // OSM's amenity/shop value — "restaurant", "cafe", "bakery". Display-only: it renders
-  // as the secondary line of a suggestion and is discarded on select.
+  // OSM's amenity/shop value — "restaurant", "cafe", "bakery". Currently unused —
+  // LookupCombobox renders [address, city] as its secondary line, not this — but kept
+  // (produced, validated, tested) because a future map view is a plausible consumer.
   category: z.string().optional(),
   // Normalised OSM identity, e.g. "way/382368408". Persisted onto Place — see lib/types.ts.
   osmId: z.string().optional(),
