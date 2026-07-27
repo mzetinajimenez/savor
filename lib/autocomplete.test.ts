@@ -107,6 +107,24 @@ describe("createLookupSession", () => {
     expect(states.at(-1)).toEqual({ status: "loading", results: [place("Taco Spot")] });
   });
 
+  // Regression guard for a subtler bug than the test above: `emit` builds `results:
+  // lastResults` into the object literal *before* running, so a loading emission that
+  // wrongly cleared `lastResults` wouldn't show up in that same emission — only in the
+  // *next* one. This drives two consecutive loading states with no terminal state between
+  // them, so a wrongly-clearing guard has somewhere to show itself.
+  it("keeps results visible across two consecutive loading states with no terminal state between", async () => {
+    const search = vi.fn().mockResolvedValue(ok("Taco Spot"));
+    const { session, states } = harness(search);
+
+    session.search("taco");
+    await vi.advanceTimersByTimeAsync(250);   // resolves to results
+
+    session.search("tacos");    // loading #1 (results: [Taco Spot])
+    session.search("tacosx");   // loading #2, scheduled before #1 ever resolves
+
+    expect(states.at(-1)).toEqual({ status: "loading", results: [place("Taco Spot")] });
+  });
+
   // This is issue #7: a slow response for an older query landing after a newer one.
   it("discards a stale response that resolves after a newer query", async () => {
     let resolveSlow!: (o: LookupOutcome) => void;

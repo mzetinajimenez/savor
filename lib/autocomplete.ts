@@ -71,7 +71,10 @@ export function createLookupSession(opts: {
   }
 
   function cachePut(key: string, results: LookupResult[]): void {
-    if (cache.size >= MAX_CACHE_ENTRIES) {
+    // Overwriting an existing key doesn't grow the map, so only evict when this write
+    // would actually add a new entry — otherwise a hot repeated query could needlessly
+    // evict the oldest entry on every re-search.
+    if (!cache.has(key) && cache.size >= MAX_CACHE_ENTRIES) {
       const oldest = cache.keys().next();
       if (!oldest.done) cache.delete(oldest.value);
     }
