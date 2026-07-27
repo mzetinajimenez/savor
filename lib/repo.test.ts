@@ -86,6 +86,64 @@ describe("createPlace", () => {
       createPlace({ name: "X", status: "been", ratings: { crit1: 3.5 } })
     ).rejects.toThrow();
   });
+
+  // T1: optional "where did this place come from" fields for share-link import. Both are
+  // undefined unless explicitly provided; a non-URL sourceUrl must reject at the schema level.
+  it("round-trips sourceUrl and sourcePlatform when provided", async () => {
+    const place = await createPlace({
+      name: "Taco Spot",
+      status: "want_to_try",
+      sourceUrl: "https://www.instagram.com/reel/abc123/",
+      sourcePlatform: "instagram",
+    });
+
+    expect(place.sourceUrl).toBe("https://www.instagram.com/reel/abc123/");
+    expect(place.sourcePlatform).toBe("instagram");
+
+    const stored = await db.places.get(place.id);
+    expect(stored?.sourceUrl).toBe("https://www.instagram.com/reel/abc123/");
+    expect(stored?.sourcePlatform).toBe("instagram");
+  });
+
+  it("leaves sourceUrl and sourcePlatform undefined when omitted", async () => {
+    const place = await createPlace({ name: "Taco Spot", status: "want_to_try" });
+    expect(place.sourceUrl).toBeUndefined();
+    expect(place.sourcePlatform).toBeUndefined();
+  });
+
+  it("rejects a non-URL sourceUrl", async () => {
+    await expect(
+      createPlace({ name: "X", status: "been", sourceUrl: "not-a-url" })
+    ).rejects.toThrow();
+  });
+
+  // Security hardening: sourceUrl is a permalink meant to be linked back to (a future
+  // "view original post" <a href={sourceUrl}>), so non-http(s) schemes must be rejected at the
+  // schema level even though nothing renders it as an href yet.
+  it("rejects a javascript: sourceUrl", async () => {
+    await expect(
+      createPlace({ name: "X", status: "been", sourceUrl: "javascript:alert(1)" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects a data: sourceUrl", async () => {
+    await expect(
+      createPlace({
+        name: "X",
+        status: "been",
+        sourceUrl: "data:text/html,<script>alert(1)</script>",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("accepts a normal https sourceUrl", async () => {
+    const place = await createPlace({
+      name: "X",
+      status: "been",
+      sourceUrl: "https://www.instagram.com/reel/abc123/",
+    });
+    expect(place.sourceUrl).toBe("https://www.instagram.com/reel/abc123/");
+  });
 });
 
 describe("updatePlace", () => {
@@ -131,6 +189,23 @@ describe("updatePlace", () => {
   it("rejects an out-of-range rating value", async () => {
     const place = await createPlace({ name: "Taco Spot", status: "been" });
     await expect(updatePlace(place.id, { ratings: { crit1: 999 } })).rejects.toThrow();
+  });
+
+  it("can set sourceUrl and sourcePlatform on an existing place", async () => {
+    const place = await createPlace({ name: "Taco Spot", status: "want_to_try" });
+    await updatePlace(place.id, {
+      sourceUrl: "https://www.tiktok.com/@user/video/123",
+      sourcePlatform: "tiktok",
+    });
+
+    const updated = await db.places.get(place.id);
+    expect(updated?.sourceUrl).toBe("https://www.tiktok.com/@user/video/123");
+    expect(updated?.sourcePlatform).toBe("tiktok");
+  });
+
+  it("rejects a non-URL sourceUrl on update", async () => {
+    const place = await createPlace({ name: "Taco Spot", status: "want_to_try" });
+    await expect(updatePlace(place.id, { sourceUrl: "not-a-url" })).rejects.toThrow();
   });
 });
 

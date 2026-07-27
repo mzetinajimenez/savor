@@ -44,6 +44,28 @@ export const placeFields = {
   // rejecting it. The 1-5 integer clamp below is applied only on the create/update path, not
   // here — see clampedRatingsSchema.
   ratings: z.record(z.string(), z.number()),
+  // http(s)-only: this lives in the SHARED placeFields, so create/update AND backup-import all
+  // enforce it. z.string().url() alone (zod 4.4.3) accepts javascript:/data: URLs, and sourceUrl
+  // is a permalink meant to be linked back to — a future `<a href={sourceUrl}>` would otherwise
+  // be an XSS sink. Unlike ratings above (deliberately left loose for backup faithfulness of
+  // historical data), sourceUrl is a brand-new field whose only writers are
+  // resolveSharedLink/pickUrl (always https), so there's no historical-faithfulness concern —
+  // tightening it here is strictly safe.
+  sourceUrl: z
+    .string()
+    .url()
+    .refine(
+      (u) => {
+        try {
+          return /^https?:$/.test(new URL(u).protocol);
+        } catch {
+          return false;
+        }
+      },
+      { message: "sourceUrl must be http(s)" }
+    )
+    .optional(),
+  sourcePlatform: z.enum(["instagram", "tiktok"]).optional(),
 };
 
 // Same 1-5 integer range setRating already enforces (via Math.min/Math.max), applied at the

@@ -4,15 +4,26 @@
 // display + local-interaction components. The visual language ("Cellar"): clay parchment
 // surfaces, wine-plum structure, ember action, gold score seals, Instrument Serif display.
 
-import type { ReactNode } from "react";
+import { useId, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
+import type { SocialPlatform } from "@/lib/social/types";
 
 // The FAB (and any empty-state "Add a place" button) announce intent via a window event;
 // T8's add-place flow listens for it. Single source of truth for the event name.
 export const ADD_PLACE_EVENT = "savor:add-place";
 
-export function emitAddPlace() {
-  window.dispatchEvent(new CustomEvent(ADD_PLACE_EVENT));
+// Optional payload for a prefilled open (e.g. from the /import share-link route, T7). All
+// fields are optional so a bare emitAddPlace() — the FAB / empty-state "Add a place" path —
+// keeps opening a blank sheet exactly as before.
+export interface PlacePrefill {
+  name?: string;
+  sourceUrl?: string;
+  sourcePlatform?: SocialPlatform;
+  autoLookup?: boolean;
+}
+
+export function emitAddPlace(prefill?: PlacePrefill) {
+  window.dispatchEvent(new CustomEvent(ADD_PLACE_EVENT, { detail: prefill }));
 }
 
 /* ─── HeaderShell ─────────────────────────────────────────────────────────
@@ -124,12 +135,75 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
   return (
     <button
       type="button"
-      onClick={emitAddPlace}
+      onClick={() => emitAddPlace()}
       className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
     >
       <PlusGlyph className="h-4 w-4" />
       {label}
     </button>
+  );
+}
+
+/* ─── PasteLinkField ─────────────────────────────────────────────────────────
+   Controlled paste-a-link form: label + text input + optional "doesn't look
+   like a link" hint + submit button. Shared by /import's paste screen and
+   PlaceForm's inline paste affordance so the two entry points into the same
+   resolve flow never drift apart. `variant` controls only the button's visual
+   weight — "primary" (default) is /import's full-page ember button; the
+   "secondary" outline style is for use inside PlaceForm's sheet, where Save
+   is the true primary action. */
+export function PasteLinkField({
+  value,
+  onChange,
+  onSubmit,
+  showHint,
+  submitting = false,
+  variant = "primary",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  showHint: boolean;
+  submitting?: boolean;
+  variant?: "primary" | "secondary";
+}) {
+  const inputId = useId();
+  const canSubmit = value.trim().length > 0 && !submitting;
+  const buttonClass =
+    variant === "primary"
+      ? "min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60";
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
+      <label htmlFor={inputId} className="sr-only">
+        Instagram or TikTok link
+      </label>
+      <input
+        id={inputId}
+        // type="text" (not "url") on purpose: a shared paste often carries the link inside
+        // caption text ("great tacos https://… go now"), which pickUrl extracts — but a
+        // type="url" field marks that whole string :invalid and native validation blocks the
+        // submit before pickUrl ever runs. inputMode="url" keeps the URL-optimized mobile
+        // keyboard; validation is ours (pickUrl → the hint below).
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Paste an Instagram or TikTok link"
+        className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+      />
+      {showHint ? (
+        <p className="text-sm text-chili">
+          That doesn&rsquo;t look like a link — try pasting the full URL.
+        </p>
+      ) : null}
+      <button type="submit" disabled={!canSubmit} className={buttonClass}>
+        {submitting ? "Finding place…" : "Find place"}
+      </button>
+    </form>
   );
 }
 
@@ -256,6 +330,20 @@ export function PlusGlyph({ className = "h-6 w-6" }: { className?: string }) {
         stroke="currentColor"
         strokeWidth={2.25}
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M10 14l4-4m-5.5 6.5-1 1a3.54 3.54 0 0 1-5-5l3-3a3.54 3.54 0 0 1 5-.5m2-2 1-1a3.54 3.54 0 0 1 5 5l-3 3a3.54 3.54 0 0 1-5 .5"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

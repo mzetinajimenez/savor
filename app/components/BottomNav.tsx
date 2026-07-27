@@ -60,7 +60,7 @@ export default function BottomNav() {
         <div className="flex flex-col items-center">
           <button
             type="button"
-            onClick={emitAddPlace}
+            onClick={() => emitAddPlace()}
             aria-label="Add a place"
             className="-mt-7 grid h-16 w-16 place-items-center rounded-full bg-ember text-white shadow-lg shadow-ember/30 ring-4 ring-shell transition active:scale-90 active:bg-ember-deep"
           >
