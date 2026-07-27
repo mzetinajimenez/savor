@@ -115,10 +115,21 @@ export default function LookupCombobox({
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       // Only swallow Escape when there's actually a list to close. useModalA11y attaches
-      // its own Escape handler at the document level for the parent Sheet; if we always
-      // stopped propagation here, Escape could never reach it and the Add-Place sheet
-      // would become impossible to dismiss with the keyboard once this field existed.
-      if (isOpen) e.stopPropagation();
+      // its own Escape handler via a *separate* document.addEventListener for the parent
+      // Sheet. Next's App Router hydrates the React root at `document` itself (layout.tsx
+      // renders <html>/<body> directly), so React's delegated dispatch listener and
+      // useModalA11y's listener both end up registered on the very same node. A plain
+      // e.stopPropagation() only blocks propagation to *ancestor* nodes — it does nothing
+      // to a sibling listener already registered on that same node — so it silently failed
+      // to stop useModalA11y's onClose from firing and the whole sheet closed along with
+      // the list (confirmed by adding temporary logging to both handlers: React's dispatch
+      // reliably runs before useModalA11y's listener for the same event, in that order).
+      // stopImmediatePropagation() on the native event *does* suppress not-yet-invoked
+      // sibling listeners on the same node within the same dispatch pass, which is exactly
+      // what's needed here. If we always did this (not just when isOpen), Escape could
+      // never reach useModalA11y and the Add-Place sheet would become impossible to
+      // dismiss with the keyboard once this field existed.
+      if (isOpen) e.nativeEvent.stopImmediatePropagation();
       sessionRef.current?.cancel();
       return;
     }
