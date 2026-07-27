@@ -16,5 +16,14 @@ const adapters = [tiktokAdapter, instagramAdapter];
 export async function resolveSharedLink(url: string): Promise<SharedLink | null> {
   const adapter = adapters.find((a) => a.matches(url));
   if (!adapter) return null;
-  return adapter.hydrate(url);
+  try {
+    return await adapter.hydrate(url);
+  } catch {
+    // Backstop, not the primary contract: every adapter today already degrades internally on
+    // its own failure modes (see instagram.ts / tiktok.ts) — this catch exists only so that a
+    // future adapter which forgets to degrade internally can't turn resolveSharedLink's "never
+    // throws" guarantee into a real throw. Both callers (PlaceForm's handlePasteResolve,
+    // /import's runImport) rely on that guarantee with no `.catch` of their own.
+    return null;
+  }
 }

@@ -71,25 +71,37 @@ function ImportInner() {
 
   async function runImport(url: string) {
     setImporting(true);
-    const link = await resolveSharedLink(url);
-    if (link) {
-      emitAddPlace({
-        name: link.nameGuess,
-        sourceUrl: link.url,
-        sourcePlatform: link.platform,
-        autoLookup: Boolean(link.nameGuess),
-      });
-    } else {
-      // Valid URL, unrecognized platform — still hand off the source; the sheet opens
-      // want_to_try with it stored and the user types the name themselves.
-      emitAddPlace({ sourceUrl: url });
+    try {
+      const link = await resolveSharedLink(url);
+      if (link) {
+        emitAddPlace({
+          name: link.nameGuess,
+          sourceUrl: link.url,
+          sourcePlatform: link.platform,
+          autoLookup: Boolean(link.nameGuess),
+        });
+      } else {
+        // Valid URL, unrecognized platform — still hand off the source; the sheet opens
+        // want_to_try with it stored and the user types the name themselves.
+        emitAddPlace({ sourceUrl: url });
+      }
+      router.replace("/");
+    } catch {
+      // Defense in depth: resolveSharedLink is structurally guaranteed not to throw (see its
+      // own try/catch backstop in lib/social/index.ts), so this branch should be unreachable in
+      // practice. But if something unexpected did throw before emitAddPlace ran, falling back
+      // to the paste UI (via the finally below) beats a permanent "Importing…" spinner with no
+      // way out. Not calling router.replace() here doesn't violate the emit-before-replace
+      // ordering documented at the top of this file — nothing was emitted in this branch, so
+      // there's nothing for AddPlaceHost to miss.
+    } finally {
+      setImporting(false);
     }
-    router.replace("/");
   }
 
   function handlePasteSubmit(e: FormEvent) {
     e.preventDefault();
-    const candidate = pickUrl(pasteValue, pasteValue);
+    const candidate = pickUrl(null, pasteValue);
     if (!candidate) {
       setPasteHint(true);
       return;

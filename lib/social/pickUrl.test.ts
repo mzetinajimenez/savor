@@ -59,4 +59,27 @@ describe("pickUrl", () => {
   it("never extracts a non-http scheme from text (the regex only matches http/https)", () => {
     expect(pickUrl(null, "click this javascript:alert(1) now")).toBeNull();
   });
+
+  // The gotcha this documents: `new URL()` happily parses any "word:" + anything as an
+  // opaque-scheme URL (here, protocol "recipe:"), so branch 1 (`url && isValidUrl(url)`) accepts
+  // a plain caption as a "valid url" and returns it whole, before the regex-extraction branch
+  // (which would have found the real link) ever runs. This is pickUrl's existing, correct-per-
+  // its-own-contract behavior when the same opaque-scheme-parseable string is passed as BOTH
+  // `url` and `text` — it is exactly why call sites must never do `pickUrl(x, x)` for free-text
+  // input (see app/components/places/PlaceForm.tsx and app/import/page.tsx, which both now pass
+  // `pickUrl(null, pasteValue)` instead).
+  it("returns the whole caption unchanged when passed as both url and text (the pickUrl(x, x) trap)", () => {
+    expect(pickUrl("Recipe: try this spot", "Recipe: try this spot")).toBe(
+      "Recipe: try this spot"
+    );
+  });
+
+  // Confirms the fixed call pattern: passing `null` for `url` (instead of the caption twice)
+  // lets the regex-extraction branch do its job regardless of what precedes the link in the
+  // caption, even when that prefix itself looks like an opaque scheme ("Recipe:").
+  it("extracts the link from a caption whose prefix looks like an opaque scheme, when url is null", () => {
+    expect(
+      pickUrl(null, "Recipe: best tacos in CDMX https://www.tiktok.com/@u/video/123")
+    ).toBe("https://www.tiktok.com/@u/video/123");
+  });
 });

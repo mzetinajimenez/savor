@@ -114,27 +114,38 @@ function AddPlaceSheet({
 
   async function handlePasteResolve(e: FormEvent) {
     e.preventDefault();
-    const candidate = pickUrl(pasteValue, pasteValue);
+    const candidate = pickUrl(null, pasteValue);
     if (!candidate) {
       setPasteHint(true);
       return;
     }
     setPasteHint(false);
     setResolving(true);
-    // resolveSharedLink never throws — an unrecognized platform returns null, and each
-    // adapter's hydrate() degrades to a URL-only result on any fetch/parse failure (see
-    // lib/social/tiktok.ts and lib/social/instagram.ts).
-    const link = await resolveSharedLink(candidate);
-    setForm((f) => ({
-      ...f,
-      name: link?.nameGuess ?? f.name,
-      sourceUrl: link?.url ?? candidate,
-      sourcePlatform: link?.platform,
-    }));
-    setResolving(false);
-    setPasteOpen(false);
-    setPasteValue("");
-    if (link?.nameGuess) void runLookup(link.nameGuess);
+    try {
+      // resolveSharedLink is structurally guaranteed not to throw (see lib/social/index.ts) —
+      // an unrecognized platform returns null, and each adapter's hydrate() degrades to a
+      // URL-only result on any fetch/parse failure (see lib/social/tiktok.ts and
+      // lib/social/instagram.ts). The try/finally here is defense in depth regardless, so
+      // `resolving` can never get stuck true on a hypothetical throw.
+      const link = await resolveSharedLink(candidate);
+      setForm((f) => ({
+        ...f,
+        name: link?.nameGuess ?? f.name,
+        sourceUrl: link?.url ?? candidate,
+        sourcePlatform: link?.platform,
+      }));
+      setPasteOpen(false);
+      setPasteValue("");
+      // setPasteOpen(false) unmounts PasteLinkField while its input is still the focused
+      // element — focus would otherwise fall back to <body>, from which the next Tab can
+      // escape useModalA11y's focus trap (it only redirects Tab from the trap's exact
+      // first/last element, see lib/useModalA11y.ts). The Name input is always present in the
+      // DOM regardless of pasteOpen, so refocusing it here is safe with no timing concern.
+      document.getElementById("place-name")?.focus();
+      if (link?.nameGuess) void runLookup(link.nameGuess);
+    } finally {
+      setResolving(false);
+    }
   }
 
   useEffect(() => {
@@ -232,13 +243,24 @@ function AddPlaceSheet({
     >
       <div className="flex flex-col gap-5">
         {form.sourceUrl ? (
-          <p className="text-sm font-semibold text-plum">
-            {form.sourcePlatform === "instagram"
-              ? "Imported from Instagram"
-              : form.sourcePlatform === "tiktok"
-              ? "Imported from TikTok"
-              : "Source link attached"}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p role="status" className="text-sm font-semibold text-plum">
+              {form.sourcePlatform === "instagram"
+                ? "Imported from Instagram"
+                : form.sourcePlatform === "tiktok"
+                ? "Imported from TikTok"
+                : "Source link attached"}
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
+              }
+              className="min-h-11 shrink-0 text-sm font-semibold text-chili transition active:opacity-70"
+            >
+              Remove
+            </button>
+          </div>
         ) : null}
 
         {!form.sourceUrl ? (
