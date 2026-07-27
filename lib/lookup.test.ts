@@ -1,16 +1,13 @@
-// searchPlaces degrades silently in every failure mode (malformed response, non-200, network
-// throw) so the add-place form can always fall back to manual entry — these tests pin that
-// contract. fetch is stubbed per-test via vi.stubGlobal and restored in afterEach.
+// searchPlaces returns a discriminated LookupOutcome so the UI can tell "lookup failed"
+// from "no matches" — a distinction a live dropdown needs and the old degrade-to-[]
+// contract threw away. AbortError is the one thing that rejects rather than resolving:
+// a superseded request has no answer worth rendering. fetch is stubbed per-test.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchPlaces } from "./lookup";
 
 function jsonResponse(body: unknown, ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => body,
-  } as Response;
+  return { ok, status, json: async () => body } as Response;
 }
 
 afterEach(() => {
@@ -18,7 +15,7 @@ afterEach(() => {
 });
 
 describe("searchPlaces", () => {
-  it("parses a successful response into LookupResult[]", async () => {
+  it("returns ok with parsed results", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse([
         { name: "Taco Spot", address: "123 Main St", city: "Austin", lat: 30.1, lng: -97.7 },
@@ -26,94 +23,94 @@ describe("searchPlaces", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const results = await searchPlaces("taco");
+    const outcome = await searchPlaces("taco");
 
-    expect(results).toEqual([
-      { name: "Taco Spot", address: "123 Main St", city: "Austin", lat: 30.1, lng: -97.7 },
-    ]);
-    expect(fetchMock).toHaveBeenCalledWith("/api/lookup?q=taco");
+    expect(outcome).toEqual({
+      ok: true,
+      results: [
+        { name: "Taco Spot", address: "123 Main St", city: "Austin", lat: 30.1, lng: -97.7 },
+      ],
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/lookup?q=taco", { signal: undefined });
   });
 
-  it("encodes the query passed to the lookup route", async () => {
+  it("keeps the new optional category and osmId fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse([
+          { name: "Franklin Barbecue", lat: 30.27, lng: -97.73, category: "restaurant", osmId: "way/382368408" },
+        ])
+      )
+    );
+
+    const outcome = await searchPlaces("franklin");
+
+    expect(outcome).toEqual({
+      ok: true,
+      results: [
+        { name: "Franklin Barbecue", lat: 30.27, lng: -97.73, category: "restaurant", osmId: "way/382368408" },
+      ],
+    });
+  });
+
+  it("encodes the query", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([]));
     vi.stubGlobal("fetch", fetchMock);
 
     await searchPlaces("ramen & noodles");
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/lookup?q=ramen%20%26%20noodles");
+    expect(fetchMock).toHaveBeenCalledWith("/api/lookup?q=ramen%20%26%20noodles", {
+      signal: undefined,
+    });
   });
 
-  it("allows results without address/city (both optional)", async () => {
+  it("forwards an AbortSignal to fetch", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([]));
+    vi.stubGlobal("fetch", fetchMock);
+    const controller = new AbortController();
+
+    await searchPlaces("taco", controller.signal);
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/lookup?q=taco", {
+      signal: controller.signal,
+    });
+  });
+
+  it("rethrows AbortError instead of returning an outcome", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse([{ name: "No Address Cafe", lat: 1, lng: 2 }]))
+      vi.fn().mockRejectedValue(new DOMException("The operation was aborted.", "AbortError"))
     );
 
-    const results = await searchPlaces("cafe");
-
-    expect(results).toEqual([{ name: "No Address Cafe", lat: 1, lng: 2 }]);
+    await expect(searchPlaces("taco")).rejects.toThrow(DOMException);
   });
 
-  it("caps results at 5 even if the response has more", async () => {
-    const many = Array.from({ length: 8 }, (_, i) => ({
-      name: `Place ${i}`,
-      lat: i,
-      lng: i,
-    }));
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(many)));
+  it("ok with an empty array is a real 'no matches', not a failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
 
-    const results = await searchPlaces("place");
-
-    expect(results).toHaveLength(5);
-    expect(results.map((r) => r.name)).toEqual(["Place 0", "Place 1", "Place 2", "Place 3", "Place 4"]);
+    expect(await searchPlaces("zzzz")).toEqual({ ok: true, results: [] });
   });
 
-  it("drops individual malformed entries but keeps valid ones", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse([
-          { name: "Valid Spot", lat: 1, lng: 2 },
-          { name: "Missing Lat", lng: 2 },
-          { lat: 3, lng: 4 }, // missing name
-          { name: "Also Valid", lat: 5, lng: 6 },
-        ])
-      )
-    );
-
-    const results = await searchPlaces("spot");
-
-    expect(results).toEqual([
-      { name: "Valid Spot", lat: 1, lng: 2 },
-      { name: "Also Valid", lat: 5, lng: 6 },
-    ]);
-  });
-
-  it("returns [] when the response body is not an array (bad shape)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "nope" })));
-
-    const results = await searchPlaces("anything");
-
-    expect(results).toEqual([]);
-  });
-
-  it("returns [] on a non-200 response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([{ name: "X", lat: 1, lng: 2 }], false, 502)));
-
-    const results = await searchPlaces("anything");
-
-    expect(results).toEqual([]);
-  });
-
-  it("returns [] when fetch throws (network failure)", async () => {
+  it("returns reason 'network' when fetch throws", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
-    const results = await searchPlaces("anything");
-
-    expect(results).toEqual([]);
+    expect(await searchPlaces("anything")).toEqual({ ok: false, reason: "network" });
   });
 
-  it("returns [] when the response body isn't valid JSON", async () => {
+  it("returns reason 'upstream' on a non-2xx response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([], false, 502)));
+
+    expect(await searchPlaces("anything")).toEqual({ ok: false, reason: "upstream" });
+  });
+
+  it("returns reason 'invalid' when the body is not an array", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "nope" })));
+
+    expect(await searchPlaces("anything")).toEqual({ ok: false, reason: "invalid" });
+  });
+
+  it("returns reason 'invalid' when the body is not valid JSON", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -125,8 +122,37 @@ describe("searchPlaces", () => {
       } as unknown as Response)
     );
 
-    const results = await searchPlaces("anything");
+    expect(await searchPlaces("anything")).toEqual({ ok: false, reason: "invalid" });
+  });
 
-    expect(results).toEqual([]);
+  it("drops individual malformed entries but keeps valid ones", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse([
+          { name: "Valid Spot", lat: 1, lng: 2 },
+          { name: "Missing Lat", lng: 2 },
+          { lat: 3, lng: 4 },
+          { name: "Also Valid", lat: 5, lng: 6 },
+        ])
+      )
+    );
+
+    expect(await searchPlaces("spot")).toEqual({
+      ok: true,
+      results: [
+        { name: "Valid Spot", lat: 1, lng: 2 },
+        { name: "Also Valid", lat: 5, lng: 6 },
+      ],
+    });
+  });
+
+  it("caps results at MAX_RESULTS (6)", async () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({ name: `Place ${i}`, lat: i, lng: i }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(many)));
+
+    const outcome = await searchPlaces("place");
+
+    expect(outcome.ok && outcome.results).toHaveLength(6);
   });
 });

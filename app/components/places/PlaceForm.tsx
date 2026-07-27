@@ -102,8 +102,8 @@ function AddPlaceSheet({
     // searchPlaces degrades to [] on any failure (bad shape, non-200, network throw) — a failed
     // lookup and a lookup with no matches look identical here, both land on the "nothing found"
     // hint below, and the form stays fully usable manually either way.
-    const results = await searchPlaces(name);
-    setLookupResults(results);
+    const outcome = await searchPlaces(name);
+    setLookupResults(outcome.ok ? outcome.results : []);
     setSearched(true);
     setLookupLoading(false);
   }
