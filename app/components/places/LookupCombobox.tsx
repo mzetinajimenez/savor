@@ -24,11 +24,14 @@ export default function LookupCombobox({
   onChange,
   onSelect,
   autoLookup = false,
+  searchNonce = 0,
 }: {
   value: string;
   onChange: (name: string) => void;
   onSelect: (result: LookupResult) => void;
   autoLookup?: boolean;
+  /** Bump to search `value` immediately, for names set programmatically after mount. */
+  searchNonce?: number;
 }) {
   const [state, setState] = useState<LookupState>({ status: "idle" });
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -78,6 +81,17 @@ export default function LookupCombobox({
     // re-running would restart the session mid-typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The paste-a-link flow resolves a venue name AFTER mount, so it can't use autoLookup above.
+  // React never fires onChange for a programmatic write, so without this nothing would search
+  // for the name it just filled in. `value` is deliberately not a dependency — including it
+  // would fire an undebounced search on every keystroke.
+  useEffect(() => {
+    if (!searchNonce) return;
+    const query = value.trim();
+    if (query) sessionRef.current?.searchNow(query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchNonce]);
 
   // "loading" deliberately carries the *previous* results (lib/autocomplete.ts) so a new
   // debounce round doesn't blank the list — pulling from both statuses keeps it visible

@@ -15,10 +15,11 @@
 // listener: `addEventListener` on mount, `removeEventListener` on cleanup. Any number of
 // emitters, exactly one listener.
 //
-// Flow inside one sheet: name (required, optionally pre-seeded) -> optional OSM lookup (tap a
-// result to autofill name/address/city/lat/lng; auto-run once on mount when the prefill asks
-// for it) -> been/want_to_try status toggle (default "been", or "want_to_try" when opened from
-// a prefill) -> optional cuisine/notes -> category checkboxes (useCategories) -> if status is
+// Flow inside one sheet: name (required, optionally pre-seeded) -> live OSM suggestions as you
+// type (LookupCombobox owns the debounce/abort/cache timing — see lib/autocomplete.ts — and
+// fires immediately, with no debounce, when the prefill asks for it) -> been/want_to_try status
+// toggle (default "been", or "want_to_try" when opened from a prefill) -> optional cuisine/notes
+// -> category checkboxes (useCategories) -> if status is
 // "been", one skippable RatingRow per live criterion (useCriteria) -> Save builds the ratings
 // record from whichever rows were touched and makes exactly one repo.createPlace call (carrying
 // sourceUrl/sourcePlatform through when present). Cancel / the sheet's own close button /
@@ -26,7 +27,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useCategories, useCriteria } from "@/lib/hooks";
-import { searchPlaces, type LookupResult } from "@/lib/lookup";
+import type { LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
@@ -34,6 +35,7 @@ import type { PlaceStatus } from "@/lib/types";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
 import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
+import LookupCombobox from "./LookupCombobox";
 
 function emptyForm(initial?: PlacePrefill) {
   return {
@@ -45,6 +47,7 @@ function emptyForm(initial?: PlacePrefill) {
     city: undefined as string | undefined,
     lat: undefined as number | undefined,
     lng: undefined as number | undefined,
+    osmId: undefined as string | undefined,
     categoryIds: [] as string[],
     ratings: {} as Record<string, number>,
     sourceUrl: initial?.sourceUrl,
@@ -82,35 +85,18 @@ function AddPlaceSheet({
   const criteria = useCriteria();
 
   const [form, setForm] = useState(() => emptyForm(initial));
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
-  const [searched, setSearched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
   const [pasteHint, setPasteHint] = useState(false);
   const [resolving, setResolving] = useState(false);
+  // Bumped to ask LookupCombobox to search the current name immediately. The paste-a-link flow
+  // resolves a venue name after mount, so it can't use the combobox's mount-time autoLookup.
+  const [searchNonce, setSearchNonce] = useState(0);
 
   const trimmedName = form.name.trim();
   const canSave = trimmedName.length > 0 && !saving;
-
-  async function runLookup(name: string) {
-    if (!name || lookupLoading) return;
-    setLookupLoading(true);
-    setSearched(false);
-    // searchPlaces degrades to [] on any failure (bad shape, non-200, network throw) — a failed
-    // lookup and a lookup with no matches look identical here, both land on the "nothing found"
-    // hint below, and the form stays fully usable manually either way.
-    const outcome = await searchPlaces(name);
-    setLookupResults(outcome.ok ? outcome.results : []);
-    setSearched(true);
-    setLookupLoading(false);
-  }
-
-  async function handleLookup() {
-    await runLookup(trimmedName);
-  }
 
   async function handlePasteResolve(e: FormEvent) {
     e.preventDefault();
@@ -142,23 +128,14 @@ function AddPlaceSheet({
       // first/last element, see lib/useModalA11y.ts). The Name input is always present in the
       // DOM regardless of pasteOpen, so refocusing it here is safe with no timing concern.
       document.getElementById("place-name")?.focus();
-      if (link?.nameGuess) void runLookup(link.nameGuess);
+      // The name just changed programmatically, and React doesn't fire the combobox's onChange
+      // for that — so nothing would search for the venue we just resolved. Bumping the nonce is
+      // the explicit ask.
+      if (link?.nameGuess) setSearchNonce((n) => n + 1);
     } finally {
       setResolving(false);
     }
   }
-
-  useEffect(() => {
-    // Run the OSM lookup once, on mount, when opened from a prefill that asks for it (share-link
-    // import) — lands the user straight on the geocode picker. This is a one-shot mount kick-off
-    // (not a subscription loop), so handleLookup's own synchronous setLookupLoading/setSearched
-    // calls are the intended, one-time behavior the cascading-render check is guarding against.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (initial?.autoLookup && initial.name) void handleLookup();
-    // Deliberately not in a dep array: this must fire exactly once per fresh sheet instance, not
-    // re-fire as `initial`/`handleLookup` identity changes across re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function handleSelectResult(result: LookupResult) {
     setForm((f) => ({
@@ -168,9 +145,8 @@ function AddPlaceSheet({
       city: result.city,
       lat: result.lat,
       lng: result.lng,
+      osmId: result.osmId,
     }));
-    setLookupResults([]);
-    setSearched(false);
   }
 
   function toggleCategory(id: string) {
@@ -203,6 +179,7 @@ function AddPlaceSheet({
         city: form.city,
         lat: form.lat,
         lng: form.lng,
+        osmId: form.osmId,
         notes: form.notes.trim() || undefined,
         categoryIds: form.categoryIds,
         ratings: form.status === "been" ? form.ratings : {},
@@ -289,66 +266,14 @@ function AddPlaceSheet({
           </div>
         ) : null}
 
-        {/* Name + OSM lookup */}
-        <div>
-          <label htmlFor="place-name" className="mb-1 block text-sm font-semibold text-ink-soft">
-            Name
-          </label>
-          <input
-            id="place-name"
-            type="text"
-            value={form.name}
-            onChange={(e) => {
-              const name = e.target.value;
-              setForm((f) => ({ ...f, name }));
-              // Editing the name invalidates any prior lookup — a stale result list (or "nothing
-              // found" hint) shouldn't linger and look like it applies to the new text.
-              setLookupResults([]);
-              setSearched(false);
-            }}
-            placeholder="Taco Spot"
-            autoComplete="off"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
-          />
-
-          {trimmedName ? (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={handleLookup}
-                disabled={lookupLoading}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60"
-              >
-                {lookupLoading ? "Looking up…" : "Look up"}
-              </button>
-            </div>
-          ) : null}
-
-          {lookupResults.length > 0 ? (
-            <ul className="mt-2 flex flex-col gap-1.5">
-              {lookupResults.map((result, i) => (
-                <li key={`${result.lat}-${result.lng}-${i}`}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelectResult(result)}
-                    className="min-h-11 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-left transition active:scale-[0.99] active:bg-surface-sunk"
-                  >
-                    <p className="text-sm font-semibold leading-snug text-ink">{result.name}</p>
-                    {result.address || result.city ? (
-                      <p className="text-xs leading-snug text-ink-soft">
-                        {result.address ?? result.city}
-                      </p>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {searched && !lookupLoading && lookupResults.length === 0 ? (
-            <p className="mt-2 text-sm text-ink-soft">Nothing found — add manually.</p>
-          ) : null}
-        </div>
+        {/* Name + live OSM lookup. The combobox owns both; see LookupCombobox.tsx. */}
+        <LookupCombobox
+          value={form.name}
+          onChange={(name) => setForm((f) => ({ ...f, name }))}
+          onSelect={handleSelectResult}
+          autoLookup={Boolean(initial?.autoLookup && initial.name)}
+          searchNonce={searchNonce}
+        />
 
         {/* Status */}
         <div>
