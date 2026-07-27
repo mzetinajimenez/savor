@@ -9,7 +9,7 @@
 // Photon is the same OSM/ODbL data, purpose-built for search-as-you-type — see
 // docs/superpowers/specs/2026-07-25-lookup-autocomplete-design.md §2.
 
-import { MAX_RESULTS } from "./lookup";
+import { MAX_RESULTS, type LookupResult } from "./lookup";
 
 export const PHOTON_SEARCH_URL = "https://photon.komoot.io/api/";
 
@@ -71,4 +71,80 @@ export function buildPhotonUrl(q: string, bias: Bias | null): string {
   }
   for (const tag of FOOD_TAGS) params.append("osm_tag", tag);
   return `${PHOTON_SEARCH_URL}?${params.toString()}`;
+}
+
+// Photon's GeoJSON, narrowed to the fields this module reads.
+interface PhotonProperties {
+  name?: string;
+  housenumber?: string;
+  street?: string;
+  locality?: string;
+  city?: string;
+  county?: string;
+  osm_type?: string;
+  osm_id?: number;
+  osm_value?: string;
+}
+
+interface PhotonFeature {
+  properties?: PhotonProperties;
+  geometry?: { coordinates?: unknown };
+}
+
+const OSM_TYPE_NAMES: Record<string, string> = { N: "node", W: "way", R: "relation" };
+
+export function toLookupResults(body: unknown): LookupResult[] {
+  if (typeof body !== "object" || body === null) return [];
+  const features = (body as { features?: unknown }).features;
+  if (!Array.isArray(features)) return [];
+
+  const results: LookupResult[] = [];
+  for (const feature of features.slice(0, MAX_RESULTS)) {
+    const mapped = toLookupResult(feature);
+    if (mapped) results.push(mapped);
+  }
+  return results;
+}
+
+// One feature in, one LookupResult or null out. Bad features are dropped individually
+// rather than sinking the whole response — one malformed row shouldn't cost the user
+// five good suggestions.
+function toLookupResult(raw: unknown): LookupResult | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const feature = raw as PhotonFeature;
+  const props = feature.properties ?? {};
+
+  const name = props.name?.trim();
+  if (!name) return null;
+
+  // GeoJSON orders coordinates [longitude, latitude] — the reverse of every other lat/lng
+  // pair in savor. Transposing here is silent and puts the place in the wrong hemisphere.
+  const coords = feature.geometry?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const street = [props.housenumber, props.street].filter(Boolean).join(" ").trim();
+  const address = street || props.locality || undefined;
+  const city = props.city ?? props.locality ?? props.county;
+  const osmId = normaliseOsmId(props);
+
+  return {
+    name,
+    ...(address ? { address } : {}),
+    ...(city ? { city } : {}),
+    lat,
+    lng,
+    ...(props.osm_value ? { category: props.osm_value } : {}),
+    ...(osmId ? { osmId } : {}),
+  };
+}
+
+// "W" + 382368408 -> "way/382368408". The long form is self-describing and usable
+// directly against Overpass or the OSM API later.
+function normaliseOsmId(props: PhotonProperties): string | undefined {
+  const typeName = props.osm_type ? OSM_TYPE_NAMES[props.osm_type] : undefined;
+  if (!typeName || typeof props.osm_id !== "number") return undefined;
+  return `${typeName}/${props.osm_id}`;
 }

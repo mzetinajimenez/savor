@@ -3,7 +3,7 @@
 // all, since vitest only includes lib/**.
 
 import { describe, expect, it } from "vitest";
-import { buildPhotonUrl, FOOD_TAGS, MAX_QUERY_LENGTH, readBiasFromHeaders } from "./photon";
+import { buildPhotonUrl, FOOD_TAGS, MAX_QUERY_LENGTH, readBiasFromHeaders, toLookupResults } from "./photon";
 
 describe("MAX_QUERY_LENGTH", () => {
   it("is 200", () => {
@@ -116,5 +116,148 @@ describe("buildPhotonUrl", () => {
   it("restricts results to food venues", () => {
     expect(FOOD_TAGS).toContain("amenity:restaurant");
     expect(FOOD_TAGS).toContain("shop:bakery");
+  });
+});
+
+describe("toLookupResults", () => {
+  // Captured verbatim from the live Photon API.
+  const franklin = {
+    type: "Feature",
+    properties: {
+      osm_type: "W",
+      osm_id: 382368408,
+      osm_key: "amenity",
+      osm_value: "restaurant",
+      housenumber: "900",
+      name: "Franklin Barbecue",
+      street: "East 11th Street",
+      locality: "Central East Austin",
+      city: "Austin",
+      county: "Travis",
+      state: "TX",
+      postcode: "78702",
+    },
+    geometry: { type: "Point", coordinates: [-97.7312847, 30.2701463] },
+  };
+
+  it("maps a real feature into a LookupResult", () => {
+    expect(toLookupResults({ features: [franklin] })).toEqual([
+      {
+        name: "Franklin Barbecue",
+        address: "900 East 11th Street",
+        city: "Austin",
+        lat: 30.2701463,
+        lng: -97.7312847,
+        category: "restaurant",
+        osmId: "way/382368408",
+      },
+    ]);
+  });
+
+  // GeoJSON is [lng, lat]. Getting this backwards is silent and catastrophic.
+  it("reads coordinates as [lng, lat], not [lat, lng]", () => {
+    const [result] = toLookupResults({ features: [franklin] });
+
+    expect(result.lat).toBeCloseTo(30.27, 2);
+    expect(result.lng).toBeCloseTo(-97.73, 2);
+  });
+
+  it("normalises all three osm_type prefixes", () => {
+    const at = (osm_type: string, osm_id: number) => ({
+      properties: { name: "X", osm_type, osm_id },
+      geometry: { coordinates: [1, 2] },
+    });
+
+    const results = toLookupResults({ features: [at("N", 1), at("W", 2), at("R", 3)] });
+
+    expect(results.map((r) => r.osmId)).toEqual(["node/1", "way/2", "relation/3"]);
+  });
+
+  it("omits osmId when osm_type is unrecognised or osm_id is missing", () => {
+    const results = toLookupResults({
+      features: [
+        { properties: { name: "A", osm_type: "Z", osm_id: 1 }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "B", osm_type: "W" }, geometry: { coordinates: [1, 2] } },
+      ],
+    });
+
+    expect(results.map((r) => r.osmId)).toEqual([undefined, undefined]);
+  });
+
+  it("falls back through city -> locality -> county", () => {
+    const results = toLookupResults({
+      features: [
+        { properties: { name: "A", city: "Austin", locality: "L", county: "C" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "B", locality: "Central East Austin", county: "C" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "C", county: "Travis" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "D" }, geometry: { coordinates: [1, 2] } },
+      ],
+    });
+
+    expect(results.map((r) => r.city)).toEqual([
+      "Austin",
+      "Central East Austin",
+      "Travis",
+      undefined,
+    ]);
+  });
+
+  it("composes address from housenumber + street, falling back to locality", () => {
+    const results = toLookupResults({
+      features: [
+        { properties: { name: "A", housenumber: "900", street: "E 11th St" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "B", street: "E 11th St" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "C", locality: "Downtown" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "D" }, geometry: { coordinates: [1, 2] } },
+      ],
+    });
+
+    expect(results.map((r) => r.address)).toEqual([
+      "900 E 11th St",
+      "E 11th St",
+      "Downtown",
+      undefined,
+    ]);
+  });
+
+  it("drops features with no name", () => {
+    const results = toLookupResults({
+      features: [
+        { properties: { name: "Keeper" }, geometry: { coordinates: [1, 2] } },
+        { properties: {}, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "   " }, geometry: { coordinates: [1, 2] } },
+      ],
+    });
+
+    expect(results.map((r) => r.name)).toEqual(["Keeper"]);
+  });
+
+  it("drops features with missing or non-finite coordinates", () => {
+    const results = toLookupResults({
+      features: [
+        { properties: { name: "Keeper" }, geometry: { coordinates: [1, 2] } },
+        { properties: { name: "NoGeometry" } },
+        { properties: { name: "Short" }, geometry: { coordinates: [1] } },
+        { properties: { name: "NaN" }, geometry: { coordinates: ["x", 2] } },
+      ],
+    });
+
+    expect(results.map((r) => r.name)).toEqual(["Keeper"]);
+  });
+
+  it("caps at MAX_RESULTS", () => {
+    const features = Array.from({ length: 9 }, (_, i) => ({
+      properties: { name: `Place ${i}` },
+      geometry: { coordinates: [i, i] },
+    }));
+
+    expect(toLookupResults({ features })).toHaveLength(6);
+  });
+
+  it("returns [] for any non-FeatureCollection body", () => {
+    expect(toLookupResults(null)).toEqual([]);
+    expect(toLookupResults("nope")).toEqual([]);
+    expect(toLookupResults({})).toEqual([]);
+    expect(toLookupResults({ features: "not-an-array" })).toEqual([]);
   });
 });
