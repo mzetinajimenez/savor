@@ -7,7 +7,7 @@
 
 import { useSyncExternalStore } from "react";
 
-type ToastItem = { id: number; message: string };
+type ToastItem = { id: number; message: string; error?: boolean };
 
 const DISMISS_MS = 3000;
 let items: ToastItem[] = [];
@@ -28,9 +28,9 @@ function getSnapshot() {
 }
 
 /** Show a transient message. Safe to call from event handlers, effects, or repo callbacks. */
-export function toast(message: string) {
+export function toast(message: string, error = false) {
   const id = nextId++;
-  items = [...items, { id, message }];
+  items = [...items, { id, message, error }];
   emit();
   setTimeout(() => {
     items = items.filter((t) => t.id !== id);
@@ -50,9 +50,16 @@ export function Toaster() {
       {current.map((t) => (
         <div
           key={t.id}
-          className="anim-toast pointer-events-auto flex max-w-sm items-center gap-2.5 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-shell shadow-lg"
+          className={`anim-toast pointer-events-auto flex max-w-sm items-center gap-2.5 rounded-sm border bg-raised px-4 py-2.5 text-sm font-medium text-cream shadow-lg ${
+            t.error ? "border-coral" : "border-rule"
+          }`}
         >
-          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-ember" />
+          <span
+            aria-hidden
+            className={`h-2 w-2 shrink-0 rounded-full ${
+              t.error ? "bg-coral" : "bg-gold"
+            }`}
+          />
           {t.message}
         </div>
       ))}
