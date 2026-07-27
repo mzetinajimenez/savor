@@ -12,8 +12,8 @@
 // floating popover mispositions. An inline list just pushes content down in a sheet
 // that already scrolls.
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createLookupSession, type LookupState } from "@/lib/autocomplete";
+import { useEffect, useRef, useState } from "react";
+import { createLookupSession, type LookupSession, type LookupState } from "@/lib/autocomplete";
 import { searchPlaces, type LookupResult } from "@/lib/lookup";
 
 const LISTBOX_ID = "place-lookup-listbox";
@@ -42,45 +42,70 @@ export default function LookupCombobox({
     onSelectRef.current = onSelect;
   });
 
-  const session = useMemo(
-    () =>
-      createLookupSession({
-        onState: (next) => {
-          setState(next);
-          setActiveIndex(-1);
-        },
-        search: searchPlaces,
-      }),
-    []
-  );
+  // The session lives in a ref, created AND destroyed by the SAME effect below — never
+  // a useMemo paired with a separately-scoped cleanup effect. createLookupSession's
+  // destroy() sets a one-way "destroyed" flag that permanently no-ops the session, and
+  // React Strict Mode double-invokes a committed mount's effects (setup -> cleanup ->
+  // setup) WITHOUT recreating useMemo values — so a memoized session torn down by an
+  // unrelated effect's cleanup would go create -> destroy -> (dead) before the user ever
+  // types, and every later session.search() from handleChange would silently no-op.
+  // Pairing create/destroy inside one effect means Strict Mode's extra cleanup+setup
+  // cycle produces a fresh, live session instead of killing the only one that exists.
+  // (Same class of dev-mode double-invoke bug lib/hooks.ts's useDbInit guards against —
+  // see its "or React StrictMode double-invokes the effect in dev" comment.)
+  const sessionRef = useRef<LookupSession | null>(null);
 
   useEffect(() => {
+    const session = createLookupSession({
+      onState: (next) => {
+        setState(next);
+        setActiveIndex(-1);
+      },
+      search: searchPlaces,
+    });
+    sessionRef.current = session;
+
     // The share-link import path (PlacePrefill.autoLookup) opens the sheet with a venue
     // name already seeded and expects suggestions immediately, with no keystroke and no
     // debounce to wait through.
     if (autoLookup && value.trim()) session.searchNow(value);
-    return () => session.destroy();
-    // Exactly once per mount: re-running would restart the session mid-typing.
+
+    return () => {
+      session.destroy();
+      sessionRef.current = null;
+    };
+    // Exactly once per mount (create/destroy paired, see sessionRef comment above):
+    // re-running would restart the session mid-typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const results = state.status === "results" ? state.results : [];
+  // "loading" deliberately carries the *previous* results (lib/autocomplete.ts) so a new
+  // debounce round doesn't blank the list — pulling from both statuses keeps it visible
+  // and arrow-navigable while a fresh search is in flight, instead of flickering closed
+  // on every keystroke.
+  const results =
+    state.status === "results" || state.status === "loading" ? state.results : [];
   const isOpen = results.length > 0;
 
   function handleChange(next: string) {
     onChange(next);
-    session.search(next);
+    sessionRef.current?.search(next);
   }
 
   function choose(result: LookupResult) {
     onChange(result.name);
     onSelectRef.current(result);
-    session.cancel();
+    sessionRef.current?.cancel();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
-      session.cancel();
+      // Only swallow Escape when there's actually a list to close. useModalA11y attaches
+      // its own Escape handler at the document level for the parent Sheet; if we always
+      // stopped propagation here, Escape could never reach it and the Add-Place sheet
+      // would become impossible to dismiss with the keyboard once this field existed.
+      if (isOpen) e.stopPropagation();
+      sessionRef.current?.cancel();
       return;
     }
     if (!isOpen) return;
@@ -95,7 +120,7 @@ export default function LookupCombobox({
       e.preventDefault();
       choose(results[activeIndex]);
     } else if (e.key === "Tab") {
-      session.cancel();
+      sessionRef.current?.cancel();
     }
   }
 
@@ -109,7 +134,7 @@ export default function LookupCombobox({
         type="text"
         role="combobox"
         aria-expanded={isOpen}
-        aria-controls={LISTBOX_ID}
+        aria-controls={isOpen ? LISTBOX_ID : undefined}
         aria-autocomplete="list"
         aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
         autoComplete="off"
@@ -124,9 +149,13 @@ export default function LookupCombobox({
       <p aria-live="polite" className="sr-only">
         {state.status === "results"
           ? `${state.results.length} suggestion${state.results.length === 1 ? "" : "s"}`
-          : state.status === "empty"
-            ? "No matches"
-            : ""}
+          : state.status === "loading"
+            ? "Searching…"
+            : state.status === "empty"
+              ? "No matches"
+              : state.status === "error"
+                ? "Couldn't reach lookup — add manually."
+                : ""}
       </p>
 
       {isOpen ? (
