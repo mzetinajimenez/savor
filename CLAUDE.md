@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 125 tests today; keep them passing.
+  must all pass. 220 tests today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
   asking first — prefer a built-in or a few lines of local code. (The PWA icons,
@@ -44,7 +44,7 @@ sabor/
 │   ├── journal/page.tsx          # "/journal" tab — every visit across places (useVisits)
 │   ├── places/[id]/page.tsx      # place detail — ratings, list membership, visits; edit / rate / log-visit
 │   ├── settings/page.tsx         # "/settings" tab — criteria editor + backup panel
-│   ├── api/lookup/route.ts       # GET /api/lookup?q= — Node-runtime Nominatim (OSM) proxy; owns the User-Agent
+│   ├── api/lookup/route.ts       # GET /api/lookup?q= — Node-runtime Photon (OSM) proxy; owns the User-Agent
 │   └── components/
 │       ├── AppInit.tsx           # renders null; runs useDbInit() exactly once (seed + request persistent storage)
 │       ├── BottomNav.tsx         # fixed 4-tab nav + elevated ember "+" FAB (dispatches savor:add-place)
@@ -52,7 +52,8 @@ sabor/
 │       ├── Toast.tsx             # toast() module-level pub/sub + <Toaster/> (no context)
 │       ├── ui.tsx                # presentational primitives — HeaderShell, Chip, EmptyState, ScoreBadge, RatingRow, glyphs
 │       ├── places/
-│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place); inline ratings + OSM lookup
+│       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place)
+│       │   ├── LookupCombobox.tsx#   name field + live debounced OSM suggestions (ARIA combobox)
 │       │   ├── PlaceCard.tsx     #   place list-row: name, status, ScoreBadge
 │       │   ├── PlaceFilters.tsx  #   status filter chips (All / Been / Want to try)
 │       │   └── RatingEditor.tsx  #   per-criterion 1–5 editor → repo.setRating
@@ -73,9 +74,11 @@ sabor/
 │   ├── hooks.ts                  # THE READ PATH — query fns + useLiveQuery hooks + useDbInit
 │   ├── ranking.ts                # pure ranking math — compositeScore, formatScore, rankCategory
 │   ├── lookup.ts                 # client side of /api/lookup — searchPlaces() + zod result schema
+│   ├── photon.ts                 # Photon wire format — query cap, IP bias, GeoJSON → LookupResult
+│   ├── autocomplete.ts           # lookup sequencing — debounce, abort, stale-discard, cache
 │   ├── backup.ts                 # export / parseBackup / importBackup / summarizeBackup (JSON envelope)
 │   ├── useModalA11y.ts           # focus trap + Escape-to-close + body scroll-lock for overlays
-│   └── *.test.ts                 # Vitest suites: db, repo, hooks, ranking, lookup, backup
+│   └── *.test.ts                 # Vitest suites: db, repo, hooks, ranking, lookup, photon, autocomplete, backup
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
@@ -132,6 +135,13 @@ path around the repo.
 - **No context providers, no state library.** Dexie `liveQuery` **is** the state
   layer — components re-render when the DB changes. Cross-cutting one-offs
   (toasts, the add-place event) use tiny module-level pub/sub, not React context.
+- **Place lookup is OSM-only, and that is a licensing constraint, not a preference.**
+  savor stores lookup results (name/address/lat/lng) in IndexedDB permanently and in
+  backups. Google Places permits storing only `place_id`; Mapbox requires a paid
+  permanent-geocoding SKU. OSM/ODbL grants storage outright. Separately, **Nominatim's
+  usage policy forbids type-ahead**, which is why the upstream is Photon. Do not swap
+  in a proprietary geocoder without re-reading
+  `docs/superpowers/specs/2026-07-25-lookup-autocomplete-design.md` §2.
 
 ## Conventions
 
@@ -165,11 +175,6 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   the same shape. Nothing currently fails CI if they drift (e.g. a new optional
   field added to `Place` but forgotten in `placeFields`). Add a static or
   test-time check that ties them together.
-- **AbortController / request-token for in-flight OSM lookups.** `lib/lookup.ts`'s
-  `searchPlaces()` (called from `PlaceForm`'s "Look up" button) has no
-  cancellation: firing a second lookup before the first resolves can let a stale
-  response land after a newer one. Needs an `AbortController` (or a request-token
-  guard) so only the latest lookup's result is applied.
 - **Backup forward-migration-on-import strategy — required BEFORE the first
   `SCHEMA_VERSION` bump.** `parseBackup` currently requires exact
   `schemaVersion` equality (see `lib/backup.ts`), so the moment `SCHEMA_VERSION`

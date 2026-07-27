@@ -53,7 +53,7 @@ npm run dev      # start the dev server at http://localhost:3000
 Other scripts:
 
 ```bash
-npm test          # run the Vitest suite (121 tests)
+npm test          # run the Vitest suite (220 tests)
 npm run lint      # eslint
 npm run build     # production build
 node scripts/generate-icons.mjs   # regenerate the PWA icons (no deps)
@@ -73,7 +73,7 @@ The app is a standard Next.js project deployed on **Vercel** (personal scope).
   ```
 
 There are no environment variables or backing services to configure — the
-`/api/lookup` route proxies OpenStreetMap's public Nominatim API and needs no
+`/api/lookup` route proxies OpenStreetMap's Photon search API and needs no
 key.
 
 ## Backup & restore
