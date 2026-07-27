@@ -144,6 +144,23 @@ describe("createPlace", () => {
     });
     expect(place.sourceUrl).toBe("https://www.instagram.com/reel/abc123/");
   });
+
+  it("round-trips osmId", async () => {
+    const place = await createPlace({
+      name: "Franklin Barbecue",
+      status: "been",
+      osmId: "way/382368408",
+    });
+
+    expect(place.osmId).toBe("way/382368408");
+    expect((await db.places.get(place.id))?.osmId).toBe("way/382368408");
+  });
+
+  it("leaves osmId undefined for a manually added place", async () => {
+    const place = await createPlace({ name: "Hole in the Wall", status: "been" });
+
+    expect(place.osmId).toBeUndefined();
+  });
 });
 
 describe("updatePlace", () => {

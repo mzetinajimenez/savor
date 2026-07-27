@@ -23,6 +23,11 @@ export interface Place extends SyncFields {
   ratings: Record<string, number>;
   sourceUrl?: string;
   sourcePlatform?: "instagram" | "tiktok";
+  // Normalised OSM identity of the geocoded venue, e.g. "way/382368408". Present only for
+  // places chosen from a lookup suggestion; manual entries have none. Kept because ODbL
+  // permits it, and it gives the planned map view stable pin identity plus a way to detect
+  // "already added" across sessions.
+  osmId?: string;
 }
 
 export interface Criterion extends SyncFields {
