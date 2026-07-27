@@ -115,11 +115,11 @@ function ImportInner() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <div className="w-full max-w-sm text-center">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sage">
           savor
         </p>
-        <h1 className="mt-0.5 font-display text-3xl leading-none text-plum">Import a place</h1>
-        <p className="mt-3 text-[0.95rem] leading-relaxed text-ink-soft">
+        <h1 className="mt-0.5 font-display text-3xl leading-none text-gold">Import a place</h1>
+        <p className="mt-3 text-[0.95rem] leading-relaxed text-cream">
           Paste an Instagram or TikTok link and we&rsquo;ll get it started.
         </p>
 
@@ -144,9 +144,9 @@ function Importing() {
     <div className="flex min-h-dvh flex-col items-center justify-center gap-3 px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-center">
       <span
         aria-hidden
-        className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-plum"
+        className="h-8 w-8 animate-spin rounded-full border-2 border-rule border-t-gold"
       />
-      <p className="text-[0.95rem] text-ink-soft">Importing…</p>
+      <p className="text-[0.95rem] text-sage">Importing…</p>
     </div>
   );
 }
