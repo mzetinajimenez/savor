@@ -1764,27 +1764,34 @@ export default function LookupCombobox({
             aria-label="Place suggestions"
             className="mt-2 flex flex-col gap-1.5"
           >
+            {/*
+              role="option" goes on the <li> itself, with no nested <button>. Two reasons:
+              a listbox's children must be options, and putting role="option" on a button
+              overrides the button's implicit role — legal ARIA, but a known source of
+              screen-reader inconsistency. And because this is the aria-activedescendant
+              pattern, focus never leaves the input, so options must not be focusable or
+              tabbable; a button would be both. Keyboard selection is handled by the
+              input's onKeyDown, and this onClick covers pointer and touch.
+            */}
             {results.map((result, i) => (
-              <li key={result.osmId ?? `${result.lat}-${result.lng}-${i}`} role="none">
-                <button
-                  type="button"
-                  id={optionId(i)}
-                  role="option"
-                  aria-selected={i === activeIndex}
-                  onClick={() => choose(result)}
-                  className={`min-h-11 w-full rounded-xl border px-3.5 py-2.5 text-left transition active:scale-[0.99] ${
-                    i === activeIndex
-                      ? "border-plum bg-surface-sunk"
-                      : "border-line bg-surface active:bg-surface-sunk"
-                  }`}
-                >
-                  <p className="text-sm font-semibold leading-snug text-ink">{result.name}</p>
-                  {result.address || result.city ? (
-                    <p className="text-xs leading-snug text-ink-soft">
-                      {[result.address, result.city].filter(Boolean).join(" · ")}
-                    </p>
-                  ) : null}
-                </button>
+              <li
+                key={result.osmId ?? `${result.lat}-${result.lng}-${i}`}
+                id={optionId(i)}
+                role="option"
+                aria-selected={i === activeIndex}
+                onClick={() => choose(result)}
+                className={`min-h-11 cursor-pointer rounded-xl border px-3.5 py-2.5 transition active:scale-[0.99] ${
+                  i === activeIndex
+                    ? "border-plum bg-surface-sunk"
+                    : "border-line bg-surface active:bg-surface-sunk"
+                }`}
+              >
+                <p className="text-sm font-semibold leading-snug text-ink">{result.name}</p>
+                {result.address || result.city ? (
+                  <p className="text-xs leading-snug text-ink-soft">
+                    {[result.address, result.city].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -1824,6 +1831,12 @@ export default function LookupCombobox({
 
 Run: `npm run build && npm run lint`
 Expected: pass. (The component is not yet rendered anywhere — Task 8 wires it in.)
+
+If `jsx-a11y/click-events-have-key-events` fires on the `<li onClick>`, **do not add a
+`tabIndex` or an `onKeyDown` to the option to satisfy it** — that would break the
+`aria-activedescendant` pattern, which requires options to be non-focusable while the
+input keeps focus. Keyboard handling already lives on the input. Suppress the rule for
+that line with a comment explaining why instead.
 
 - [ ] **Step 3: Commit**
 
