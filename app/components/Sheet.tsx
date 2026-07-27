@@ -24,7 +24,7 @@ export default function Sheet({
 
   return (
     <div
-      className="anim-fade fixed inset-x-0 top-0 z-40 flex h-dvh items-end justify-center bg-ink/40 sm:items-center sm:p-4"
+      className="anim-fade fixed inset-x-0 top-0 z-40 flex h-dvh items-end justify-center bg-[rgba(6,26,19,0.72)] sm:items-center sm:p-4"
       onMouseDown={(e) => {
         // Backdrop tap closes — but only when the press starts on the backdrop itself,
         // so a drag that ends outside the panel doesn't dismiss it.
@@ -37,18 +37,18 @@ export default function Sheet({
         aria-modal="true"
         aria-labelledby="sheet-title"
         tabIndex={-1}
-        className="anim-sheet flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface shadow-2xl ring-1 ring-line/60 outline-none sm:anim-pop sm:rounded-2xl"
+        className="anim-sheet flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-sm bg-raised shadow-2xl ring-1 ring-rule/60 outline-none sm:anim-pop sm:rounded-sm"
       >
         <div className="relative shrink-0 px-5 pt-3">
           {/* Grab handle — a bottom-sheet affordance, hidden once centered. */}
           <div
             aria-hidden
-            className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line sm:hidden"
+            className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-rule sm:hidden"
           />
           <div className="flex items-center justify-between gap-3 pb-3">
             <h2
               id="sheet-title"
-              className="font-display text-2xl leading-none text-plum"
+              className="font-display text-2xl leading-none text-gold"
             >
               {title}
             </h2>
@@ -56,7 +56,7 @@ export default function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-soft transition active:scale-90 active:bg-surface-sunk"
+              className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-cream transition active:scale-90 active:bg-ground-deep"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
                 <path
@@ -74,7 +74,7 @@ export default function Sheet({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">{children}</div>
 
         {footer ? (
-          <div className="shrink-0 border-t border-line px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+          <div className="shrink-0 border-t border-rule px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
             {footer}
           </div>
         ) : (
