@@ -16,7 +16,7 @@
 - **Baseline:** 175 tests in 9 files pass today. Task 1 adds a 10th file that starts red by design; from Task 15 all 177 must be green.
 - **Contrast floor:** `--color-sage` (`#8FAFA0`) is the minimum for *any* text. `--color-sage-deep` (`#6E8C7E`) is non-text only (rules, inactive glyph strokes).
 - **Semantics:** gold = primary action / active state / score seals. Coral = destructive and error **only**.
-- **Radii:** `0` is the default (rows, sections). `4px` for cards, chips, inputs, sheets. Fully round for score seals only. No other radii.
+- **Radii:** `0` is the default (rows, sections). `4px` for cards, chips, inputs, sheets. Fully round is permitted **only** for the score seal and for small circular indicators (rating beads, status dots) — never for cards, rows, buttons, chips, inputs or pills. No other radii. The rule exists to remove rounded floating cards and pills, not to square off round indicators.
 - **Touch targets ≥44px**; tap area may exceed visual size. Text inputs stay ≥16px (`text-base`) so iOS does not focus-zoom. Pinch-zoom stays enabled.
 - **Overlays keep using `Sheet` + `useModalA11y`** and keep mounting/unmounting rather than toggling an `open` prop.
 - **No component imports `dexie` or `@/lib/db`.** Reads through `lib/hooks.ts`, writes through `lib/repo.ts`.
