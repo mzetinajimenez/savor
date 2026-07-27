@@ -28,18 +28,38 @@
   --color-ember-tint: #fbe6d4;
 
   /* Gold — the score seal / quality mark. */
-  --color-gold: #9c6f18;
+  --color-gold: #efc152;
   --color-gold-tint: #f5e9cf;
 
   /* Chili — destructive / error. */
   --color-chili: #be3227;
 
+  /* ─── Supper Club ─────────────────────────────────────────────────────────
+     Restaurant ephemera — matchbooks, place cards, awnings. Bottle green ground,
+     cream ink, butter-gold seals. Gold is yes (action, active, score); coral is
+     careful (destructive and error) and means nothing else.
+     Cellar tokens above are retained until the migration completes, then deleted.
+     -------------------------------------------------------------------------- */
+  --color-ground: #0f3b2e; /* app background */
+  --color-ground-deep: #0a2a20; /* nav, recessed wells */
+  --color-raised: #17513f; /* raised surfaces: sheets, inputs */
+  --color-rule: #21503f; /* hairlines between rows */
+  --color-rule-strong: #2a5a49; /* section dividers */
+
+  --color-cream: #f2ead8; /* primary text; inverted card surface */
+  --color-sage: #8fafa0; /* secondary text — the MINIMUM for any text (~5.2:1) */
+  --color-sage-deep: #6e8c7e; /* NON-TEXT only (~3.4:1): rules, inactive strokes */
+
+  --color-gold-deep: #c99b2e; /* pressed gold */
+  --color-coral: #ff5c3c; /* destructive and error ONLY */
+
   /* Type — Instrument Serif (menu display) + Hanken Grotesk (humanist body). */
-  --font-display: var(--font-instrument), ui-serif, Georgia, "Times New Roman", serif;
+  --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-body: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-util: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 1rem;
+  --radius-sm: 4px; /* cards, chips, inputs, sheets — the ONLY non-zero radius */
 }
 
 :root {
