@@ -1,8 +1,8 @@
 "use client";
 
 // Presentational UI primitives for savor. No Dexie / repo imports here — these are pure
-// display + local-interaction components. The visual language ("Cellar"): clay parchment
-// surfaces, wine-plum structure, ember action, gold score seals, Instrument Serif display.
+// display + local-interaction components. The visual language ("Supper Club"): bottle green
+// surfaces, cream ink, butter-gold seals, Bodoni Moda display, Archivo utility labels.
 
 import { useId, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";

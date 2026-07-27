@@ -53,7 +53,7 @@
   --color-gold-deep: #c99b2e; /* pressed gold */
   --color-coral: #ff5c3c; /* destructive and error ONLY */
 
-  /* Type — Instrument Serif (menu display) + Hanken Grotesk (humanist body). */
+  /* Type — Bodoni Moda (display) + Hanken Grotesk (humanist body) + Archivo (utility). */
   --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-body: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;

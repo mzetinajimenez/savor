@@ -1,18 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, Instrument_Serif } from "next/font/google";
+import { Archivo, Bodoni_Moda, Hanken_Grotesk } from "next/font/google";
 import AppInit from "./components/AppInit";
 import BottomNav from "./components/BottomNav";
 import { AddPlaceHost } from "./components/places/PlaceForm";
 import { Toaster } from "./components/Toast";
 import "./globals.css";
 
-// Type pairing for savor's "Cellar" look: Instrument Serif for menu-style display, Hanken
-// Grotesk for warm, legible body/UI. Both wired as CSS variables consumed by @theme.
-const instrument = Instrument_Serif({
+// Type pairing for savor's "Supper Club" look: Bodoni Moda (a high-contrast didone) for
+// display and place names, Hanken Grotesk for body, Archivo for uppercase utility labels.
+// Weights are subset to exactly what the type scale uses.
+const bodoni = Bodoni_Moda({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "600"],
   style: ["normal", "italic"],
-  variable: "--font-instrument",
+  variable: "--font-bodoni",
+  display: "swap",
+});
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -59,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${instrument.variable} ${hanken.variable}`}>
+    <html lang="en" className={`${bodoni.variable} ${hanken.variable} ${archivo.variable}`}>
       <body className="min-h-dvh antialiased">
         {/* Single-mount data touchpoint: seeds the DB + requests persistent storage. */}
         <AppInit />
