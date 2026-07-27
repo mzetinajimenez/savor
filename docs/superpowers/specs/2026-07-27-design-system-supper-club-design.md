@@ -1,7 +1,7 @@
-# savor design pass — "Supper Club" token system and full restyle
+# savor design overhaul — "Supper Club"
 
 Date: 2026-07-27
-Issue: #24 (Epic: design pass), Thread 1 — with Thread 2/3 explicitly out of scope
+Issue: #24 (Epic: design pass) — all three threads. Closes #9.
 Status: proposed
 
 ## Problem
@@ -12,19 +12,28 @@ display (Instrument Serif), terracotta accent (`#d2551c`). It is a competent exe
 of a palette that appears regardless of subject, which is why it reads as templated
 despite being carefully built.
 
-Underneath the palette there is no system. `app/globals.css` defines colors, two font
+Underneath the palette there is no system. `app/globals.css` defines colours, two font
 families and exactly one radius token. There is no type scale, no spacing rhythm, no
-elevation model and a four-keyframe motion vocabulary. 3,766 lines of TSX across 7
+elevation model, and a four-keyframe motion vocabulary. 3,766 lines of TSX across 7
 routes and 16 components each make local decisions about size and spacing, so the app
 reads as assembled rather than designed.
+
+Three further gaps, all named in #24:
+
+- **The scoring model is invisible.** Per-list weighted criteria are savor's entire
+  thesis — the same place ranks differently in different lists — and nothing in the UI
+  says so. Scores appear as bare numbers you take on faith.
+- **There is no desktop design.** Above `sm` it is a phone layout in a wide window.
+- **There is no UI test coverage at all.** 175 tests in 9 files, all in `lib/`. A total
+  visual regression would leave the suite green.
 
 ## Decisions
 
 ### 1. Direction: "Supper Club"
 
 Restaurant ephemera — matchbooks, place cards, awnings — rather than menus and
-parchment. A saturated bottle-green ground with cream ink, butter-gold seals and coral
-for alerts. Bodoni Moda carries display and place names; Hanken Grotesk stays for body;
+parchment. A saturated bottle-green ground with cream ink, butter-gold seals, coral for
+alerts. Bodoni Moda carries display and place names; Hanken Grotesk stays for body;
 Archivo handles utility caps.
 
 Rejected alternatives, both mocked and reviewed:
@@ -39,43 +48,53 @@ information design.
 
 ### 2. No component library — pinned
 
-Not Mantine, not shadcn/ui, not Base UI. This is a **pinned product decision** and
-belongs in `CLAUDE.md` alongside the other pinned semantics, which is what #24 asks for.
-
-Reasoning:
+Not Mantine, not shadcn/ui, not Base UI. A **pinned product decision** for `CLAUDE.md`,
+which is what #24 asks for.
 
 - What makes this direction distinctive is tokens, type and layout — precisely the
   surface a component library wants to own. Adopting one trades a distinctive look for
   a competent generic one.
-- Mantine specifically carries documented integration cost with Tailwind v4
-  (`postcss-preset-mantine` alongside `@tailwindcss/postcss`, `@mantine/core/styles.layer.css`,
-  hand-managed `@layer` ordering), and its `Popover`-portaling `Combobox` fights the
-  `h-dvh` bottom sheet with the iOS keyboard raised.
-- It trips CLAUDE.md's ask-before-adding-dependencies rule for no gain here.
+- Mantine specifically carries documented Tailwind v4 integration cost
+  (`postcss-preset-mantine` alongside `@tailwindcss/postcss`,
+  `@mantine/core/styles.layer.css`, hand-managed `@layer` ordering), and its
+  `Popover`-portaling `Combobox` fights the `h-dvh` bottom sheet with the iOS keyboard
+  raised.
 
-**This decision is scoped to presentation, not behaviour.** If a specific interaction
-later needs a hard accessibility state machine, adopting a *headless* primitive for
-that one interaction is a separate decision, made on its own merits, and is not
-foreclosed by this spec.
+**Scoped to presentation, not behaviour.** If a future interaction needs a hard
+accessibility state machine, adopting a *headless* primitive for that one interaction is
+a separate decision on its own merits, and is not foreclosed here.
 
-### 3. Radii: rounding is now rare and deliberate
+### 3. Radii: rounding is rare and deliberate
 
-The current `--radius-card: 1rem` applied to list rows made them read as forced. The
-new system offers three values only:
+`--radius-card: 1rem` on list rows is what made them read as forced. Three values only:
 
 | Token | Value | Used for |
 | --- | --- | --- |
 | `--radius-none` | `0` | list rows, sections, rules — the default |
-| `--radius-sm` | `4px` | the peek card, chips, inputs, sheets |
+| `--radius-sm` | `4px` | peek card, chips, inputs, sheets |
 | `--radius-full` | `9999px` | score seals only |
 
-List rows become **flat and ruled**, not floating cards.
+List rows become **flat and ruled**, never floating cards.
 
-### 4. Score presentation: the foil seal
+### 4. Score is a foil seal
 
-The composite score renders as a butter-gold disc with dark-green ink — a stamped seal.
-It replaces the current `ScoreBadge`. Rank sits left in muted Archivo; place name in
-Bodoni; address on its own line beneath in Hanken.
+A butter-gold disc with dark-green ink — a stamped seal. Replaces `ScoreBadge`. Rank
+sits left in muted Archivo, place name in Bodoni, address on its own line in Hanken.
+
+### 5. Desktop ≥`md`: nav rail plus single column
+
+The bottom nav becomes a fixed left rail; content stays one column at ~720px max-width.
+Detail still navigates to its own screen, as on mobile. Sheets stay centred modals
+(already the behaviour at ≥`sm`). Split-pane was considered and rejected as
+disproportionate to a device-local personal app.
+
+### 6. UI testing: Playwright end-to-end
+
+One devDependency (`@playwright/test`). It is the only option that can verify what this
+overhaul actually adds — long-press, drag-to-dismiss, back-button semantics, real
+IndexedDB, viewport units, PWA behaviour. jsdom cannot meaningfully test any of them.
+
+---
 
 ## The token system
 
@@ -85,7 +104,7 @@ Replaces the `@theme` block in `app/globals.css` wholesale.
 
 ```
 --color-ground:       #0F3B2E   /* app background */
---color-ground-deep:  #0A2A20   /* bottom nav, recessed wells */
+--color-ground-deep:  #0A2A20   /* nav rail / bottom nav, recessed wells */
 --color-raised:       #17513F   /* raised surfaces: sheets, inputs */
 --color-rule:         #21503F   /* hairlines between rows */
 --color-rule-strong:  #2A5A49   /* section dividers */
@@ -101,18 +120,18 @@ Replaces the `@theme` block in `app/globals.css` wholesale.
 
 **Semantic rule — gold is yes, coral is careful.** Gold carries primary action and
 active state; coral is reserved for destructive and error. The want-to-try marker,
-which was coral in the mockup, becomes a hollow cream ring so coral keeps one meaning.
+coral in the mockup, becomes a hollow cream ring so coral keeps exactly one meaning.
 
 **Contrast floor.** `--color-sage` (~5.2:1 on ground) is the minimum for any text,
 including inactive tab and nav labels. `--color-sage-deep` (~3.4:1) fails AA for body
-text and is restricted to non-text use. Every text/background pair must be measured
+text and is restricted to non-text use. Every text/background pair must be *measured*
 during implementation, not assumed.
 
 ### Type
 
-Fonts change in `app/layout.tsx`: **drop `Instrument_Serif`, add `Bodoni_Moda` and
-`Archivo`.** Hanken Grotesk stays. All three via `next/font/google` as CSS variables,
-matching the existing pattern.
+`app/layout.tsx` changes: **drop `Instrument_Serif`, add `Bodoni_Moda` and `Archivo`.**
+Hanken Grotesk stays. All via `next/font/google` as CSS variables, matching the existing
+pattern.
 
 ```
 --font-display:  Bodoni Moda        /* screen titles, place names, score numerals */
@@ -120,13 +139,11 @@ matching the existing pattern.
 --font-util:     Archivo            /* uppercase labels, tabs, eyebrows, rank */
 ```
 
-Scale (mobile-first; each is a named token, not an ad-hoc size):
-
 | Token | Size / leading | Face | Use |
 | --- | --- | --- | --- |
 | `display-xl` | 33px / 0.98, italic 600 | Bodoni | screen titles |
 | `display-lg` | 26px / 1.05, 600 | Bodoni | place-detail name |
-| `display-md` | 20px / 1.1, 600 | Bodoni | peek/sheet titles |
+| `display-md` | 20px / 1.1, 600 | Bodoni | peek / sheet titles |
 | `name` | 16.5px / 1.25, 600 | Bodoni | list-row place names |
 | `body` | 15px / 1.5, 400 | Hanken | body copy |
 | `body-sm` | 13px / 1.45, 400 | Hanken | dense secondary copy |
@@ -134,23 +151,19 @@ Scale (mobile-first; each is a named token, not an ad-hoc size):
 | `label` | 11px / 1, 600, `0.12em`, uppercase | Archivo | tabs, buttons |
 | `eyebrow` | 8.5px / 1, 700, `0.24em`, uppercase | Archivo | section eyebrows |
 
-**Unchanged constraint:** text-entry inputs stay ≥16px so iOS does not focus-zoom, and
-pinch-zoom stays enabled (WCAG 1.4.4). Score numerals use `font-variant-numeric:
-tabular-nums`.
+**Unchanged constraints:** text-entry inputs stay ≥16px so iOS does not focus-zoom;
+pinch-zoom stays enabled (WCAG 1.4.4). Score numerals use `tabular-nums`.
 
 ### Spacing
 
-4px base scale: `4 · 8 · 12 · 16 · 24 · 32 · 44`.
-
-- Screen gutter: `16px`
-- List-row vertical padding: `12px`
-- Section gap: `24px`
-- Minimum touch target: `44px` (unchanged — tap area may exceed visual size)
+4px base scale: `4 · 8 · 12 · 16 · 24 · 32 · 44`. Screen gutter `16px`, list-row
+vertical padding `12px`, section gap `24px`, minimum touch target `44px` (tap area may
+exceed visual size).
 
 ### Elevation
 
-On a dark ground, shadow reads weakly. Elevation is carried by **surface lightness plus
-a hairline**, with real shadow reserved for overlays.
+On a dark ground, shadow reads weakly. Elevation is **surface lightness plus a
+hairline**; real shadow is reserved for overlays.
 
 | Level | Treatment |
 | --- | --- |
@@ -160,30 +173,26 @@ a hairline**, with real shadow reserved for overlays.
 
 ### Motion
 
-Existing keyframes are retuned, not replaced. The `prefers-reduced-motion` block stays
-exactly as-is.
+Existing keyframes retuned, not replaced. The `prefers-reduced-motion` block stays
+exactly as-is and must suppress every new animation added below.
 
-- Sheet enter: `0.26s cubic-bezier(.22, 1, .36, 1)` (unchanged)
-- Fade / pop / toast: unchanged durations
-- Press feedback: `active:scale-[0.97]` applied **uniformly** — it is currently uneven
+- Sheet enter `0.26s cubic-bezier(.22, 1, .36, 1)`; fade / pop / toast unchanged
+- Peek lift `0.18s`, scrim fade `0.15s`
+- Press feedback `active:scale-[0.97]` applied **uniformly** — currently uneven
 
-## Scope: what gets restyled
+---
 
-Every route and component below is rebuilt against the new tokens. No behaviour
-changes, no new features.
+## Phases
 
-**Routes (7):** `/` places · `/categories` · `/categories/[id]` · `/journal` ·
-`/places/[id]` · `/settings` · `/import`
+Each phase is independently shippable and must leave `npm test`, `npm run build`,
+`npm run lint` (and from Phase 6, `npm run test:e2e`) green.
 
-**Components (16):** `AppInit` · `BottomNav` · `Sheet` · `Toast` · `ui.tsx`
-(`HeaderShell`, `Chip`, `EmptyState`, `ScoreBadge` → seal, `RatingRow`, glyphs) ·
-`PlaceForm` · `PlaceCard` · `PlaceFilters` · `RatingEditor` · `CategoryForm` ·
-`WeightsEditor` · `VisitForm` · `VisitCard` · `CriteriaEditor` · `BackupPanel`
+### Phase 0 — Foundation
 
-### PWA chrome must move in the same commit
+Token system into `app/globals.css`; fonts swapped in `app/layout.tsx`.
 
-Parchment is baked into four places. If they drift, cold-start flashes cream before
-painting green:
+**PWA chrome moves in the same commit.** Parchment is baked into four places; if they
+drift, cold-start flashes cream before painting green:
 
 1. `public/manifest.webmanifest` — `background_color` and `theme_color` (`#f6ede3` → `#0F3B2E`)
 2. `app/layout.tsx` — `viewport.themeColor`
@@ -191,69 +200,198 @@ painting green:
 4. `scripts/generate-icons.mjs` — icons are drawn on parchment; regenerate all four
    (`icon-192`, `icon-512`, `icon-maskable-512`, `apple-touch-icon`)
 
-Also revisit `appleWebApp.statusBarStyle` in `app/layout.tsx` — `"default"` gives dark
-status-bar glyphs, which will be wrong against a dark ground.
+Also change `appleWebApp.statusBarStyle` from `"default"` — dark glyphs will be wrong
+against a dark ground.
 
-## Non-goals
+### Phase 1 — Restyle every surface
 
-Deliberately excluded; each becomes a child issue of #24.
+Presentation only. No behaviour changes, no `lib/` edits.
 
-| Deferred | Why |
-| --- | --- |
-| Ranked / Want-to-try **tabs** | Structural navigation change, not restyling |
-| **Address** display and **city filter** | `Place.address` and `Place.city` already exist, so no migration is needed — but it is a feature, not a restyle |
-| **Long-press peek** with score breakdown | New interaction; see note below |
-| Desktop ≥`md` layout | #24 Thread 2, web half |
-| Sheet gestures, back-button semantics, drag-to-dismiss | #24 Thread 2, mobile half |
-| User journeys and UI test infrastructure | #24 Thread 3 |
-| A11y bundle (`role="alertdialog"`, `useId` for sheet titles) | #9 |
+**Routes (7):** `/` · `/categories` · `/categories/[id]` · `/journal` · `/places/[id]` ·
+`/settings` · `/import`
 
-### Note on the deferred peek
+**Components (16):** `AppInit` · `BottomNav` · `Sheet` · `Toast` · `ui.tsx`
+(`HeaderShell`, `Chip`, `EmptyState`, `ScoreBadge` → seal, `RatingRow`, glyphs) ·
+`PlaceForm` · `PlaceCard` · `PlaceFilters` · `RatingEditor` · `CategoryForm` ·
+`WeightsEditor` · `VisitForm` · `VisitCard` · `CriteriaEditor` · `BackupPanel`
 
-Long-press peek is designed and mocked. It shows the per-criterion breakdown with
-weights and a plain-language line — *"food quality counts triple here… in Cheap eats
-the same ratings score 3.6"* — which is currently the only place savor's per-list
-weighting is legible anywhere in the UI.
+### Phase 2 — List information design
 
-Two constraints already established, to carry into that spec:
+**`PlaceForm` gains Address and City inputs.** Today it exposes Name, Cuisine and Notes
+only; `address` and `city` are populated *solely* by OSM lookup autofill, so every
+manually-added place has neither. Without these fields the address line renders blank
+and the city filter cannot see most places. Both are optional; lookup keeps autofilling
+them, and the user can correct what it returns.
 
-- **`navigator.vibrate()` is Android-only.** Safari has never implemented it and there
-  is no web API for the Taptic Engine. iOS gets the visual lift and scrim; there is no
-  haptic tick, and the spec must not promise one.
-- **It must stay an accelerator, never the only path.** Long-press is not discoverable,
-  not keyboard-reachable and not exposed to screen readers. The same breakdown must
-  exist on place detail; hover-after-delay is the desktop equivalent.
+No schema change is required — `Place.address?` and `Place.city?` already exist
+(`lib/types.ts`), and `placeFields` in `lib/repo.ts` already validates both. **`SCHEMA_VERSION`
+does not move, so the #2 backup-migration fast-follow is not triggered by this work.**
+
+- **Tabs.** `/categories/[id]` splits Ranked and Want to try into underline tabs, state
+  in a `?tab=ranked|want` search param via `router.replace` (so tabbing does not fill
+  the history stack). Ranked is the default.
+- **Address line** under each place name across list rows.
+- **City filter** as a chip row, persisted in `?city=`. Options are derived from the
+  distinct non-empty `city` values actually present among that list's places, plus "All
+  cities". A new query function in `lib/hooks.ts`, unit-tested.
+
+### Phase 3 — Make the score legible
+
+The work that answers "why is this 4.6?".
+
+**New pure functions in `lib/ranking.ts`**, unit-tested, preserving the pinned
+semantics exactly (missing weight = 1, explicit `0` excludes, `null` when nothing
+contributes, 1-decimal display):
+
+```ts
+export type CriterionContribution = {
+  criterionId: string;
+  name: string;
+  weight: number;          // effective weight — missing resolves to 1
+  rating: number | null;
+  included: boolean;       // weight > 0 && rating != null && criterion live
+};
+
+export type ScoreExplanation = { score: number | null; contributions: CriterionContribution[] };
+
+export function explainScore(place, category, criteria): ScoreExplanation;
+export function scoreAcrossCategories(place, categories, criteria): Array<{
+  categoryId: string; name: string; score: number | null;
+}>;
+```
+
+**One `ScoreBreakdown` component, two mounts:**
+
+1. **Place detail** — the canonical, always-available location.
+2. **Long-press peek** — an accelerator over the list.
+
+The breakdown shows each criterion with its effective weight (`×3`), the rating as a
+bar, and a plain-language line naming what dominates and how the same ratings score in
+another list. That line is the only place savor's per-list weighting is stated in words.
+
+**Long-press peek mechanics:**
+
+- `pointerdown` starts a ~450ms timer; cancelled by `pointermove` beyond ~10px,
+  `pointerup`, `pointercancel`, or scroll.
+- `-webkit-touch-callout: none` and `user-select: none` on rows; `contextmenu`
+  suppressed, or iOS throws its own callout over the peek.
+- `navigator.vibrate(10)`, feature-guarded.
+- Desktop equivalent: hover-intent ~600ms under `(pointer: fine)`.
+- Dismiss on `pointerup`, Escape, or scroll.
+
+**Two constraints that are not negotiable:**
+
+- **`navigator.vibrate()` is Android-only.** Safari has never implemented it and there is
+  no web API for the Taptic Engine. iOS gets the visual lift and scrim; there is no
+  haptic tick, and no copy or comment may imply otherwise.
+- **The peek is an accelerator, never the only path.** Long-press is not discoverable,
+  not keyboard-reachable, and not exposed to screen readers. Rows stay ordinary links;
+  the peek is `aria-hidden`. The canonical breakdown lives on place detail.
+
+### Phase 4 — Native feel
+
+- **Sheet drag-to-dismiss** (`<sm` bottom-sheet form only, not the centred modal).
+  Pointer-tracked `translateY`, floor at 0; dismiss past ~25% of sheet height or
+  velocity > ~0.5px/ms, otherwise spring back. Suppressed under `prefers-reduced-motion`.
+- **Back-button closes sheets.** Sheets are not routes and will not become routes. On
+  open, `history.pushState({ savorSheet: id }, "")`; `popstate` closes. Programmatic
+  closes (button, backdrop, Escape) call `history.back()` so the entry is consumed and
+  the stack stays balanced. Must be verified against Next's router for double-pop and
+  for navigating away with a sheet open.
+- **Uniform tap feedback** — `active:scale-[0.97]` on every interactive control.
+- **Overscroll**: `overscroll-behavior: contain` on scrollers; suppress pull-to-refresh
+  inside overlays.
+- **#9 folded in, since sheets are already open here:** `role="alertdialog"` plus focus
+  move on the three inline confirm steps (`BackupPanel`, `CategoryForm`,
+  `CriteriaEditor`); `useId` for sheet title ids so stacked sheets cannot collide; the
+  plain-text empty states on place detail replaced with `EmptyState`.
+
+### Phase 5 — Desktop ≥`md`
+
+- `BottomNav` becomes a fixed left rail at ≥`md`; the bottom bar is hidden. The add-place
+  FAB becomes a gold primary button in the rail, still dispatching `savor:add-place`.
+- Content constrained to ~720px, centred in the remaining space.
+- Hover states and `focus-visible` rings on every interactive control; full keyboard
+  traversal of each route.
+- Sheets remain centred modals at ≥`sm` — unchanged.
+
+### Phase 6 — Playwright and the journeys
+
+- Add `@playwright/test` as a devDependency; `playwright.config.ts` with a `webServer`
+  running a production build on a dedicated port for determinism.
+- Specs in `e2e/`. `vitest.config.ts` already includes only `lib/**/*.test.ts`, so the
+  two suites cannot collide. New script `npm run test:e2e`.
+- IndexedDB is real in-browser, so no `fake-indexeddb`. Playwright's per-test context
+  isolation gives a clean database, which exercises first-run seeding naturally.
+
+Journeys from #24, each with a stated success criterion:
+
+1. First run — empty state → seeded criteria → add a first place
+2. Add a place manually (no lookup)
+3. Add via autocomplete → rate → assign to lists
+4. Add via shared TikTok/Instagram link (share target and paste)
+5. Log a visit → review it in the journal
+6. Create a list → set weights → see places re-rank
+7. Edit criteria (rename / add / remove / reorder) → scores update
+8. Export a backup → clear data → import it back
+
+**Journey 9 (install as PWA → launch → use offline) is blocked on #5** (service worker),
+which does not exist yet. It is written down but not automated; note it explicitly rather
+than pretending coverage.
+
+### Phase 7 — Record the decisions
+
+`CLAUDE.md` updates:
+
+- Pinned Product decisions: no component library (scoped to presentation); the radius
+  rule; gold-is-yes / coral-is-careful.
+- Workflow rules: green-before-commit now includes `npm run test:e2e`.
+- Correct the stale test count. CLAUDE.md says 125, #24 says 225; measured on
+  2026-07-27 it is **175 passing in 9 files**.
+
+---
 
 ## Verification
 
-`npm test`, `npm run build` and `npm run lint` must all pass before every commit, per
-CLAUDE.md.
+1. `npm test`, `npm run build`, `npm run lint`, `npm run test:e2e` green.
+2. Measured contrast for every text/background pair against the floor above.
+3. Manual pass over all 7 routes and every sheet at `<sm` and `≥md`.
+4. Cold-start from the installed PWA — confirm no cream flash.
+5. `prefers-reduced-motion` on — confirm every animation, including drag-to-dismiss and
+   the peek, is suppressed.
+6. Keyboard-only traversal of each route.
 
-**Green tests prove nothing about this change.** All 175 tests (9 files) live in `lib/`
-and cover the data layer, ranking, backup and lookup. Zero cover a rendered component. A
-complete visual regression would leave the suite green. Verification is therefore:
-
-> Both existing counts are stale: CLAUDE.md says 125, #24 says 225. Measured on
-> 2026-07-27 it is **175 passing in 9 files**. Correct CLAUDE.md as part of this work.
-
-1. Test/build/lint green — confirms nothing in `lib/` was disturbed.
-2. A manual screen-by-screen pass over all 7 routes and every sheet, on a real mobile
-   viewport, at both `<sm` and `≥sm` breakpoints.
-3. Measured contrast for every text/background pair against the floor above.
-4. Cold-start check from the installed PWA — confirm no cream flash.
-5. `prefers-reduced-motion` on — confirm animation is suppressed.
-
-That this verification is entirely manual is exactly the gap #24 Thread 3 names, and is
-an argument for sequencing the journeys-and-tests work soon after.
+Until Phase 6 lands, **green tests prove nothing about Phases 0–5** — all 175 existing
+tests are in `lib/` and a complete visual regression would leave them passing. This is
+the argument for not deferring Phase 6.
 
 ## Risks
 
-- **Blast radius.** Every route and component changes at once. Mitigated by the change
-  being presentation-only — no repo, hook, or schema edits — so `lib/` stays untouched
-  and the storage seam is unaffected.
-- **Dark ground is a commitment.** It propagates to manifest, icons, status bar and
-  splash. Enumerated above so they move together.
-- **Bodoni Moda at small sizes.** A high-contrast didone can thin out below ~16px.
-  Place names sit at 16.5px deliberately; anything smaller stays Hanken.
-- **Two new font families** increase the webfont payload. Both load via `next/font`
-  with `display: swap`; weights are subset to those the scale actually uses.
+- **Blast radius.** Every route and component changes. Phases 0–1 are presentation-only
+  and touch no `lib/` file, so the storage seam is unaffected; Phases 2–3 add pure
+  functions and query functions with tests alongside, per the existing convention.
+- **Phase 4 is the riskiest.** History manipulation interacts with Next's router, and
+  pointer-tracked dismissal interacts with scrolling and the iOS keyboard. It has the
+  highest chance of subtle breakage and the least value if rushed — ship it after
+  Playwright exists if sequencing has to give.
+- **Dark ground is a commitment** that propagates to manifest, icons, status bar and
+  splash. Enumerated in Phase 0 so they move together.
+- **Bodoni Moda at small sizes.** A high-contrast didone thins out below ~16px. Place
+  names sit at 16.5px deliberately; anything smaller stays Hanken.
+- **Two new font families** increase webfont payload. Both load via `next/font` with
+  `display: swap`, subset to the weights the scale actually uses.
+- **Existing places have no address or city** until re-looked-up or hand-edited. The
+  address line and city filter must degrade quietly — no blank rows, no empty filter bar.
+
+## Non-goals
+
+| Deferred | Why |
+| --- | --- |
+| Offline cold-start / service worker | #5 — Phase 6 journey 9 depends on it |
+| Visit edit and delete | #3 — a real gap, but a feature not a design pass |
+| Photos on visits | #4 |
+| Share / recommend cards | #6 |
+| Manual tie-break ordering | #10 |
+| Type↔zod drift guard | #8 |
+| Backup forward-migration | #2 — not triggered; `SCHEMA_VERSION` does not move here |
+| Autocomplete abort / request-token | #7 |
