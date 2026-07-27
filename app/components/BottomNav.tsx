@@ -50,7 +50,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line/80 bg-shell/90 backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-rule/80 bg-ground-deep backdrop-blur-md"
     >
       <div className="mx-auto grid max-w-xl grid-cols-5 items-center px-2 pb-[calc(0.4rem+env(safe-area-inset-bottom))] pt-1.5">
         <NavItem tab={TABS[0]} active={TABS[0].match(pathname)} />
@@ -62,7 +62,7 @@ export default function BottomNav() {
             type="button"
             onClick={() => emitAddPlace()}
             aria-label="Add a place"
-            className="-mt-7 grid h-16 w-16 place-items-center rounded-full bg-ember text-white shadow-lg shadow-ember/30 ring-4 ring-shell transition active:scale-90 active:bg-ember-deep"
+            className="-mt-7 grid h-16 w-16 place-items-center rounded-full bg-gold text-ground shadow-lg shadow-gold/30 ring-4 ring-ground-deep transition active:scale-[0.97] active:bg-gold-deep"
           >
             <PlusGlyph className="h-7 w-7" />
           </button>
@@ -82,17 +82,21 @@ function NavItem({ tab, active }: { tab: Tab; active: boolean }) {
       href={href}
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 flex-col items-center gap-0.5 py-1 transition ${
-        active ? "text-plum" : "text-ink-soft active:text-ink"
+        active
+          ? "text-gold shadow-[inset_0_2px_0_var(--color-gold)]"
+          : "text-sage active:text-sage"
       }`}
     >
       <span
         className={`grid h-8 w-14 place-items-center rounded-full transition ${
-          active ? "bg-plum-tint" : "bg-transparent"
+          active ? "bg-raised" : "bg-transparent"
         }`}
       >
         <Icon className="h-6 w-6" />
       </span>
-      <span className="text-[0.66rem] font-semibold tracking-wide">{label}</span>
+      <span className="font-util text-[0.53rem] font-bold uppercase tracking-[0.16em]">
+        {label}
+      </span>
     </Link>
   );
 }
