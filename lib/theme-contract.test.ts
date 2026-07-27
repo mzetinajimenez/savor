@@ -46,6 +46,21 @@ function violations(pattern: RegExp): string[] {
   });
 }
 
+// Scans for raw hex colours, but excludes lines declaring Next.js Viewport themeColor.
+// The theme colour must remain a hex literal (it's serialized into <meta name="theme-color">,
+// not evaluated as CSS), so it cannot be tokenized even though it's a colour literal.
+function violationsExcludingThemeColor(pattern: RegExp): string[] {
+  return tsxFiles(APP_DIR).flatMap((file) => {
+    const content = readFileSync(file, "utf8");
+    const lines = content.split("\n");
+    const filtered = lines.filter((line) => !line.includes("themeColor")).join("\n");
+    const found = filtered.match(pattern) ?? [];
+    return found.length === 0
+      ? []
+      : [`${relative(process.cwd(), file)} — ${found.length}: ${[...new Set(found)].join(", ")}`];
+  });
+}
+
 describe("theme contract", () => {
   it("no component references a legacy Cellar token", () => {
     const pattern = new RegExp(`\\b(?:${UTILITY_PREFIX})-(?:${LEGACY_TOKENS.join("|")})\\b`, "g");
@@ -53,6 +68,6 @@ describe("theme contract", () => {
   });
 
   it("no component hardcodes a raw hex colour", () => {
-    expect(violations(/#[0-9a-fA-F]{3,8}\b/g)).toEqual([]);
+    expect(violationsExcludingThemeColor(/#[0-9a-fA-F]{3,8}\b/g)).toEqual([]);
   });
 });
