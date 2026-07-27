@@ -19,7 +19,7 @@ import { deletePlace, updatePlace } from "@/lib/repo";
 import type { Place, PlaceStatus } from "@/lib/types";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
-import { Chip, EmptyState, HeaderShell, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
+import { Chip, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
 import RatingEditor from "@/app/components/places/RatingEditor";
 import VisitForm from "@/app/components/visits/VisitForm";
 
@@ -153,6 +153,22 @@ export default function PlaceDetailPage() {
         {subtitle ? <p className="mt-3 text-[0.95rem] text-ink-soft">{subtitle}</p> : null}
         {place.address ? <p className="mt-1 text-sm text-ink-soft">{place.address}</p> : null}
         {place.notes ? <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">{place.notes}</p> : null}
+
+        {place.sourceUrl ? (
+          <a
+            href={place.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-plum active:opacity-70"
+          >
+            <LinkGlyph className="h-4 w-4" />
+            {place.sourcePlatform === "instagram"
+              ? "View on Instagram"
+              : place.sourcePlatform === "tiktok"
+              ? "View on TikTok"
+              : "View source"}
+          </a>
+        ) : null}
 
         {categories === undefined ? null : (
           <div className="mt-3 flex flex-wrap gap-2">

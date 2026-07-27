@@ -335,6 +335,20 @@ export function PlusGlyph({ className = "h-6 w-6" }: { className?: string }) {
   );
 }
 
+export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M10 14l4-4m-5.5 6.5-1 1a3.54 3.54 0 0 1-5-5l3-3a3.54 3.54 0 0 1 5-.5m2-2 1-1a3.54 3.54 0 0 1 5 5l-3 3a3.54 3.54 0 0 1-5 .5"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function StarGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>

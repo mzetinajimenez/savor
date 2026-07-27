@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { compositeScore } from "@/lib/ranking";
 import type { Place } from "@/lib/types";
-import { ScoreBadge } from "../ui";
+import { LinkGlyph, ScoreBadge } from "../ui";
 
 const STATUS_LABEL: Record<Place["status"], string> = {
   been: "Been",
@@ -45,6 +45,21 @@ export default function PlaceCard({
           >
             {STATUS_LABEL[place.status]}
           </span>
+          {place.sourceUrl ? (
+            <span
+              role="img"
+              aria-label={
+                place.sourcePlatform === "instagram"
+                  ? "Imported from Instagram"
+                  : place.sourcePlatform === "tiktok"
+                  ? "Imported from TikTok"
+                  : "Has a source link"
+              }
+              className="shrink-0"
+            >
+              <LinkGlyph className="h-3.5 w-3.5 text-ink-soft" />
+            </span>
+          ) : null}
         </div>
         {subtitle ? <p className="mt-0.5 truncate text-sm text-ink-soft">{subtitle}</p> : null}
       </div>
