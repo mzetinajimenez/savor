@@ -12,8 +12,8 @@
 
 - **Scope is Phases 0–1 of the spec.** Tabs, address/city, the peek, desktop rail, gestures and Playwright are later plans. This plan changes **presentation only** — no `lib/` logic, no `repo.ts`, no `db.ts`, no `SCHEMA_VERSION` movement, no behaviour changes.
 - **Never `git add -A`.** Stage explicit paths (CLAUDE.md).
-- **Green before every commit:** `npm test`, `npm run build`, `npm run lint` must all pass.
-- **Baseline:** 175 tests in 9 files pass today. Task 1 adds a 10th file that starts red by design; from Task 15 all must be green.
+- **Green before every commit — with exactly one carved-out exception.** `npm run build` and `npm run lint` must pass at every commit, and every test must pass **except `lib/theme-contract.test.ts`**, which is red by design from Task 1 until Task 15. That exception is deliberate (it is the migration's progress meter) and is the only one; a failure in any other test file blocks the commit.
+- **Baseline:** 175 tests in 9 files pass today. Task 1 adds a 10th file that starts red by design; from Task 15 all 177 must be green.
 - **Contrast floor:** `--color-sage` (`#8FAFA0`) is the minimum for *any* text. `--color-sage-deep` (`#6E8C7E`) is non-text only (rules, inactive glyph strokes).
 - **Semantics:** gold = primary action / active state / score seals. Coral = destructive and error **only**.
 - **Radii:** `0` is the default (rows, sections). `4px` for cards, chips, inputs, sheets. Fully round for score seals only. No other radii.
