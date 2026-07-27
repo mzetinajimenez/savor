@@ -14,7 +14,17 @@
 - **Never `git add -A`.** Stage explicit paths (CLAUDE.md).
 - **Green before every commit — with exactly one carved-out exception.** `npm run build` and `npm run lint` must pass at every commit, and every test must pass **except `lib/theme-contract.test.ts`**, which is red by design from Task 1 until Task 15. That exception is deliberate (it is the migration's progress meter) and is the only one; a failure in any other test file blocks the commit.
 - **Baseline:** 175 tests in 9 files pass today. Task 1 adds a 10th file that starts red by design; from Task 15 all 177 must be green.
-- **Contrast floor:** `--color-sage` (`#8FAFA0`) is the minimum for *any* text. `--color-sage-deep` (`#6E8C7E`) is non-text only (rules, inactive glyph strokes).
+- **Contrast floor — surface-aware. Read this before pairing any text colour with any background.** Contrast depends on the pair, not the token. Measured values:
+
+  | Text | on `ground` | on `ground-deep` | on `raised` |
+  | --- | --- | --- | --- |
+  | `cream` | pass | pass | **7.67:1 pass** |
+  | `sage` | **5.23:1 pass** | **6.45:1 pass** | **3.85:1 FAIL** |
+  | `sage-deep` | 3.4:1 FAIL | FAIL | FAIL |
+
+  So: `text-sage` is permitted on `bg-ground` and `bg-ground-deep` **only**. Secondary text on `bg-raised` must be `text-cream`, or the surface must change to `bg-ground-deep`. `text-sage-deep` is **non-text only** (rules, dividers, inactive glyph strokes) on every surface.
+
+  This matters because the migration mapping pairs `text-ink-soft → text-sage` with `bg-surface → bg-raised`. Applying both mechanically produces a sub-AA combination. When a legacy row had secondary text on a raised card, pick `text-cream` or re-ground the surface — do not just substitute tokens.
 - **Semantics:** gold = primary action / active state / score seals. Coral = destructive and error **only**.
 - **Radii:** `0` is the default (rows, sections). `4px` for cards, chips, inputs, sheets. Fully round is permitted **only** for the score seal and for small circular indicators (rating beads, status dots) — never for cards, rows, buttons, chips, inputs or pills. No other radii. The rule exists to remove rounded floating cards and pills, not to square off round indicators.
 - **Touch targets ≥44px**; tap area may exceed visual size. Text inputs stay ≥16px (`text-base`) so iOS does not focus-zoom. Pinch-zoom stays enabled.
