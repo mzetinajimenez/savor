@@ -306,7 +306,7 @@ function Bead({ filled, size }: { filled: boolean; size: "sm" | "md" }) {
   return (
     <span
       aria-hidden
-      className={`block rounded-sm ${dim} ${
+      className={`block rounded-full ${dim} ${
         filled
           ? "bg-gold shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
           : "border-2 border-rule bg-ground-deep"
