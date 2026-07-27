@@ -398,3 +398,19 @@ describe("importBackup atomicity", () => {
     expect(byId(after.visits)).toEqual(byId(before.visits));
   });
 });
+
+describe("osmId round-trip", () => {
+  it("survives an export -> parse cycle", async () => {
+    await createPlace({
+      name: "Franklin Barbecue",
+      status: "been",
+      osmId: "way/382368408",
+    });
+
+    const blob = await exportBackup();
+    const parsed = parseBackup(JSON.parse(await blob.text()));
+
+    const franklin = parsed.places.find((p) => p.name === "Franklin Barbecue");
+    expect(franklin?.osmId).toBe("way/382368408");
+  });
+});
