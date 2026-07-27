@@ -293,11 +293,47 @@ another list. That line is the only place savor's per-list weighting is stated i
 - **Sheet drag-to-dismiss** (`<sm` bottom-sheet form only, not the centred modal).
   Pointer-tracked `translateY`, floor at 0; dismiss past ~25% of sheet height or
   velocity > ~0.5px/ms, otherwise spring back. Suppressed under `prefers-reduced-motion`.
-- **Back-button closes sheets.** Sheets are not routes and will not become routes. On
-  open, `history.pushState({ savorSheet: id }, "")`; `popstate` closes. Programmatic
-  closes (button, backdrop, Escape) call `history.back()` so the entry is consumed and
-  the stack stays balanced. Must be verified against Next's router for double-pop and
-  for navigating away with a sheet open.
+- **Back-button closes sheets — via a search param, with no popstate listener of our
+  own.** Sheets are not routes and will not become routes. Sheet state lives in
+  `?sheet=<name>`, and the sheet mounts when the param is present.
+
+  Next 16 patches `window.history.pushState` (`node_modules/next/dist/client/components/app-router.js:252`).
+  Calling the patched global copies Next's internal markers onto the new entry and
+  dispatches `ACTION_RESTORE`, so `useSearchParams()` reflects the change with no RSC
+  fetch and no navigation. Next's own `popstate` handler then covers back/forward.
+
+  **This is load-bearing.** That handler (`:284`) reads:
+
+  ```js
+  if (!event.state) return;                         // silently does nothing
+  if (!event.state.__NA) window.location.reload();   // full page reload
+  ```
+
+  An entry without Next's `__NA` marker causes a **full page reload** on back. The
+  marker is stamped by the patch, so the rules are: always call the patched global
+  `window.history.pushState`, never a captured reference to the original, and never
+  before mount.
+
+  - **Open:** `window.history.pushState(null, "", "?sheet=edit")`
+  - **Back:** handled entirely by Next — param disappears, sheet unmounts
+  - **Close** (button, backdrop, Escape): `window.history.back()`, consuming the entry so
+    the stack stays balanced and entries never accumulate
+  - **Ephemeral:** strip any `?sheet=` on cold load with `replaceState`, so it never
+    survives a reload
+
+  **Never put an entity id in the query.** The owning route already carries it in the
+  path — `/places/[id]?sheet=edit`, `/categories/[id]?sheet=weights`. The global
+  add-place FAB is `?sheet=add` and carries no id at all.
+
+  **Accessibility is unchanged by construction.** `lib/useModalA11y.ts` already restores
+  focus on unmount (`previouslyFocused?.focus()`) and its docblock states it is built for
+  overlays that mount/unmount rather than toggle an `open` prop — which is exactly the
+  shape URL-derived state produces. Both close paths unmount identically, so the focus
+  trap, scroll-lock release and focus restoration behave the same whether the user
+  presses Escape or the Android back gesture. No change to that hook.
+
+  **Known build constraint:** `useSearchParams()` requires the consuming component to sit
+  inside a `<Suspense>` boundary or `next build` fails.
 - **Uniform tap feedback** — `active:scale-[0.97]` on every interactive control.
 - **Overscroll**: `overscroll-behavior: contain` on scrollers; suppress pull-to-refresh
   inside overlays.
@@ -370,10 +406,12 @@ the argument for not deferring Phase 6.
 - **Blast radius.** Every route and component changes. Phases 0–1 are presentation-only
   and touch no `lib/` file, so the storage seam is unaffected; Phases 2–3 add pure
   functions and query functions with tests alongside, per the existing convention.
-- **Phase 4 is the riskiest.** History manipulation interacts with Next's router, and
-  pointer-tracked dismissal interacts with scrolling and the iOS keyboard. It has the
-  highest chance of subtle breakage and the least value if rushed — ship it after
-  Playwright exists if sequencing has to give.
+- **Phase 4's drag-to-dismiss is the riskiest thing here**, because pointer tracking
+  interacts with scrolling and the iOS keyboard. Ship it after Playwright exists if
+  sequencing has to give. The back-button work is *less* risky than first assessed, now
+  that sheet state is URL-derived and Next owns the popstate path — but the `__NA` reload
+  trap above means it still needs an explicit e2e test for back, forward, and
+  navigating away with a sheet open.
 - **Dark ground is a commitment** that propagates to manifest, icons, status bar and
   splash. Enumerated in Phase 0 so they move together.
 - **Bodoni Moda at small sizes.** A high-contrast didone thins out below ~16px. Place
