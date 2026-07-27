@@ -117,6 +117,13 @@ function AddPlaceSheet({
       setForm((f) => ({
         ...f,
         name: link?.nameGuess ?? f.name,
+        // A resolved nameGuess replaces the name, same as a manual edit — so any
+        // previously-captured location is just as stale here as it is in
+        // handleNameChange above, for the same reason. No nameGuess means the name
+        // (and thus the location) is untouched, so leave it alone.
+        ...(link?.nameGuess
+          ? { address: undefined, city: undefined, lat: undefined, lng: undefined, osmId: undefined }
+          : null),
         sourceUrl: link?.url ?? candidate,
         sourcePlatform: link?.platform,
       }));
