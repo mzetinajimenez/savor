@@ -46,14 +46,14 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "savor",
   },
 };
 
 export const viewport: Viewport = {
-  // Cellar clay-parchment shell (--color-shell) so the browser chrome blends into the app.
-  themeColor: "#f6ede3",
+  // Supper Club bottle-green ground (--color-ground) so the browser chrome blends into the app.
+  themeColor: "#0f3b2e",
   width: "device-width",
   initialScale: 1,
   // Pinch-zoom deliberately left enabled (no maximumScale / userScalable) — WCAG 1.4.4.

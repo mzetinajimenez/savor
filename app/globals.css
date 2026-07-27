@@ -63,7 +63,7 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -72,8 +72,8 @@ body {
 }
 
 body {
-  background-color: var(--color-shell);
-  color: var(--color-ink);
+  background-color: var(--color-ground);
+  color: var(--color-cream);
   font-family: var(--font-body);
   /* Respect iOS safe areas so fixed chrome clears the home indicator. */
   padding-bottom: env(safe-area-inset-bottom);
@@ -86,7 +86,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-plum);
+  outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
 
