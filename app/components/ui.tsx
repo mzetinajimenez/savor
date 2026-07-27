@@ -79,7 +79,7 @@ export function Chip({
     "inline-flex shrink-0 items-center gap-1.5 rounded-sm px-3.5 py-1.5 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] transition";
   const look = active
     ? "bg-gold-deep text-ground shadow-sm"
-    : "border border-rule bg-raised text-sage";
+    : "border border-rule bg-ground-deep text-sage";
 
   if (!onClick) {
     return <span className={`${base} ${look} ${className}`}>{children}</span>;
@@ -92,7 +92,7 @@ export function Chip({
       // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual chip —
       // the extra height is invisible padding around the same compact px-3.5/py-1.5 label.
       className={`${base} ${look} min-h-11 active:scale-95 ${
-        active ? "active:opacity-90" : "active:bg-ground-deep"
+        active ? "active:opacity-90" : "active:opacity-80"
       } ${className}`}
     >
       {children}
@@ -193,7 +193,7 @@ export function PasteLinkField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Paste an Instagram or TikTok link"
-        className="h-12 w-full rounded-sm border border-rule bg-raised px-3.5 text-base text-cream placeholder:text-sage/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        className="h-12 w-full rounded-sm border border-rule bg-raised px-3.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
       />
       {showHint ? (
         <p className="text-sm text-coral">
@@ -208,8 +208,10 @@ export function PasteLinkField({
 }
 
 /* ─── ScoreBadge ─────────────────────────────────────────────────────────────
-   The score seal — a foil stamp in butter gold with dark-green ink. The one
-   place a fully-round radius is used. Serif numeral, tabular, via formatScore. */
+   The score seal — a foil stamp in butter gold with dark-green ink. Fully-round
+   radius is reserved for this seal and small circular indicators (rating beads,
+   status dots) — never cards, rows, buttons, chips, or inputs. Serif numeral,
+   tabular, via formatScore. */
 export function ScoreBadge({
   score,
   size = "md",
