@@ -34,7 +34,14 @@
 
   --color-gold: #efc152; /* primary action, active state, score seals */
   --color-gold-deep: #c99b2e; /* pressed gold */
-  --color-coral: #ff5c3c; /* destructive and error ONLY */
+
+  /* Coral — destructive and error ONLY.
+     `coral` is a SIGNAL colour: borders, dots, and text on `ground-deep` (5.02:1).
+     It is NOT text-legal on `raised` (3.00:1). For a destructive button FILL use
+     `coral-deep`, which clears 4.5:1 against `text-ground`; plain `coral` as a fill
+     only reaches 4.06:1, and these are the highest-stakes labels in the app. */
+  --color-coral: #ff5c3c;
+  --color-coral-deep: #e8431f; /* destructive button fill */
 
   /* Type — Bodoni Moda (display) + Hanken Grotesk (humanist body) + Archivo (utility). */
   --font-display: var(--font-bodoni), ui-serif, Georgia, serif;

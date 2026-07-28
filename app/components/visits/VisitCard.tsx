@@ -27,7 +27,7 @@ export default function VisitCard({
         <p className="truncate text-sm text-sage">{visit.dishes}</p>
       ) : null}
       {visit.notes ? (
-        <p className="truncate text-[0.82rem] text-sage/80">{visit.notes}</p>
+        <p className="truncate text-[0.82rem] text-cream/80">{visit.notes}</p>
       ) : null}
     </Link>
   );

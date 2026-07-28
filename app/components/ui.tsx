@@ -193,10 +193,13 @@ export function PasteLinkField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Paste an Instagram or TikTok link"
-        className="h-12 w-full rounded-sm border border-rule bg-raised px-3.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        className="h-12 w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
       />
+      {/* Coral is the signal, cream carries the words: coral text is 3.00:1 on the bg-raised
+          sheet body this can render inside, and 4.06:1 on ground. Same border-plus-cream
+          pattern the error Toast settled on. */}
       {showHint ? (
-        <p className="text-sm text-coral">
+        <p className="border-l-2 border-coral pl-2 text-sm text-cream">
           That doesn&rsquo;t look like a link — try pasting the full URL.
         </p>
       ) : null}

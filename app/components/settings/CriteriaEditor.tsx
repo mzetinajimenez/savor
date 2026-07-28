@@ -42,7 +42,7 @@ export default function CriteriaEditor() {
         updateCriterion(neighbor.id, { sortOrder: current.sortOrder }),
       ]);
     } catch {
-      toast("Couldn't reorder — try again");
+      toast("Couldn't reorder — try again", true);
     } finally {
       setReordering(false);
     }
@@ -217,7 +217,7 @@ function CriterionRow({
               type="button"
               onClick={() => setConfirmingDelete(false)}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
             >
               Cancel
             </button>
@@ -225,7 +225,7 @@ function CriterionRow({
               type="button"
               onClick={handleDelete}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm bg-coral px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
             >
               {busy ? "Deleting…" : "Delete"}
             </button>

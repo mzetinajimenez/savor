@@ -29,9 +29,9 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 };
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-raised px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep";
 
-const emberButtonClass =
+const goldButtonClass =
   "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep";
 
 // Local-timezone-safe date formatting for a plain YYYY-MM-DD string (matches the pattern used by
@@ -108,7 +108,7 @@ export default function PlaceDetailPage() {
       // Marking a want_to_try place as been is the "rate it now" moment — open the editor.
       if (next === "been") setRatingEditorOpen(true);
     } catch {
-      toast("Couldn't update status");
+      toast("Couldn't update status", true);
     } finally {
       setStatusPending(false);
     }
@@ -121,7 +121,7 @@ export default function PlaceDetailPage() {
     try {
       await updatePlace(currentPlace.id, { categoryIds: next });
     } catch {
-      toast("Couldn't update lists");
+      toast("Couldn't update lists", true);
     }
   }
 
@@ -141,11 +141,10 @@ export default function PlaceDetailPage() {
           type="button"
           onClick={handleStatusToggle}
           disabled={statusPending}
-          className={`inline-flex min-h-11 items-center gap-1.5 rounded-sm px-4 text-sm font-semibold uppercase tracking-wide transition active:scale-95 disabled:opacity-60 ${
-            place.status === "been"
-              ? "bg-raised text-gold"
-              : "bg-raised text-gold"
-          }`}
+          // "Been" and "Want to try" are distinguished by the label, not by colour: this is a
+          // status toggle, and gold-vs-gold said nothing while still reading as active state.
+          // Matches PlaceCard, which renders the same datum as a recessed Chip.
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-95 active:bg-raised disabled:opacity-60"
         >
           {STATUS_LABEL[place.status]}
         </button>
@@ -197,7 +196,7 @@ export default function PlaceDetailPage() {
           <button
             type="button"
             onClick={() => setRatingEditorOpen(true)}
-            className={emberButtonClass}
+            className={goldButtonClass}
           >
             Edit ratings
           </button>
@@ -208,7 +207,7 @@ export default function PlaceDetailPage() {
             Add rating criteria in Settings to start rating places.
           </p>
         ) : (
-          <div className="mt-3 flex flex-col divide-y divide-rule rounded-sm border border-rule bg-raised px-4">
+          <div className="mt-3 flex flex-col divide-y divide-rule rounded-sm border border-sage-deep bg-ground-deep px-4">
             {criteria.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 py-3">
                 <span className="text-[0.95rem] text-cream">{c.name}</span>
@@ -247,7 +246,7 @@ export default function PlaceDetailPage() {
           <button
             type="button"
             onClick={() => setVisitFormOpen(true)}
-            className={emberButtonClass}
+            className={goldButtonClass}
           >
             <PlusGlyph className="h-4 w-4" />
             Log visit
@@ -265,14 +264,14 @@ export default function PlaceDetailPage() {
             {visits.map((v) => (
               <li
                 key={v.id}
-                className="rounded-sm border border-rule bg-raised px-4 py-3 shadow-sm"
+                className="rounded-sm border border-sage-deep bg-ground-deep px-4 py-3 shadow-sm"
               >
                 <p className="text-sm font-semibold text-cream">{formatVisitDate(v.date)}</p>
                 {v.dishes ? (
                   <p className="mt-0.5 truncate text-sm text-sage">{v.dishes}</p>
                 ) : null}
                 {v.notes ? (
-                  <p className="mt-0.5 truncate text-[0.82rem] text-sage/80">{v.notes}</p>
+                  <p className="mt-0.5 truncate text-[0.82rem] text-cream/80">{v.notes}</p>
                 ) : null}
               </li>
             ))}
@@ -333,7 +332,7 @@ function PlaceEditSheet({
       toast("Place updated");
       onClose();
     } catch {
-      toast("Couldn't save changes — try again");
+      toast("Couldn't save changes — try again", true);
       setSaving(false);
     }
   }
@@ -346,7 +345,7 @@ function PlaceEditSheet({
       onDeleted();
       onClose();
     } catch {
-      toast("Couldn't delete that place — try again");
+      toast("Couldn't delete that place — try again", true);
       setDeleting(false);
     }
   }
@@ -374,56 +373,56 @@ function PlaceEditSheet({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Taco Spot"
-            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
+            className="min-h-11 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-sage">
-            Cuisine <span className="font-normal text-sage/70">(optional)</span>
+            Cuisine <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             placeholder="Mexican, ramen, pizza…"
-            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
+            className="min-h-11 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-sage">
-            City <span className="font-normal text-sage/70">(optional)</span>
+            City <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Austin"
-            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
+            className="min-h-11 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-sage">
-            Address <span className="font-normal text-sage/70">(optional)</span>
+            Address <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="123 Main St"
-            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
+            className="min-h-11 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-sage">
-            Notes <span className="font-normal text-sage/70">(optional)</span>
+            Notes <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="What to order, the vibe, anything worth remembering…"
-            className="resize-none rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
+            className="resize-none rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
@@ -438,7 +437,7 @@ function PlaceEditSheet({
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
-                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep"
+                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
                 >
                   Cancel
                 </button>
@@ -446,7 +445,7 @@ function PlaceEditSheet({
                   type="button"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="min-h-11 flex-1 rounded-sm bg-coral px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+                  className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>
@@ -456,7 +455,7 @@ function PlaceEditSheet({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="min-h-11 text-sm font-semibold text-coral transition active:opacity-70"
+              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
             >
               Delete place
             </button>

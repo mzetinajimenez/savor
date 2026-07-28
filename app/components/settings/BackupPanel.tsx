@@ -5,7 +5,7 @@
 // directions go entirely through lib/backup (exportBackup/parseBackup/importBackup/
 // summarizeBackup) — this component never touches Dexie directly. Import is destructive (it
 // replaces all 4 entity tables), so a validated-but-not-yet-applied backup sits behind an
-// in-panel confirm step — the same chili confirm-box pattern CriteriaEditor/CategoryForm use for
+// in-panel confirm step — the same coral confirm-box pattern CriteriaEditor/CategoryForm use for
 // delete — rather than window.confirm, showing a plain-language summary before anything is
 // written.
 
@@ -50,7 +50,7 @@ export default function BackupPanel() {
       URL.revokeObjectURL(url);
       toast("Backup downloaded");
     } catch {
-      toast("Couldn't create backup — try again");
+      toast("Couldn't create backup — try again", true);
     } finally {
       setStatus("idle");
     }
@@ -73,7 +73,7 @@ export default function BackupPanel() {
       } else if (err instanceof SyntaxError) {
         toast("That file isn't valid JSON");
       } else {
-        toast("Couldn't read backup file");
+        toast("Couldn't read backup file", true);
       }
     } finally {
       setStatus("idle");
@@ -90,7 +90,7 @@ export default function BackupPanel() {
       toast("Backup restored");
       setPending(null);
     } catch {
-      toast("Couldn't restore backup — try again");
+      toast("Couldn't restore backup — try again", true);
     } finally {
       setStatus("idle");
     }
@@ -98,7 +98,7 @@ export default function BackupPanel() {
 
   return (
     <div className="flex flex-col gap-3 rounded-sm border border-rule bg-raised px-4 py-3.5 shadow-sm">
-      <p className="text-sm text-sage">
+      <p className="text-sm text-cream">
         Save every place, list, and visit to a file, or restore from one you saved earlier.
       </p>
 
@@ -115,7 +115,7 @@ export default function BackupPanel() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={busy || pending !== null}
-          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
         >
           {status === "reading" ? "Reading…" : "Import"}
         </button>
@@ -139,7 +139,7 @@ export default function BackupPanel() {
               type="button"
               onClick={() => setPending(null)}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
             >
               Cancel
             </button>
@@ -147,7 +147,7 @@ export default function BackupPanel() {
               type="button"
               onClick={handleConfirmImport}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm bg-coral px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
             >
               {status === "importing" ? "Restoring…" : "Replace data"}
             </button>

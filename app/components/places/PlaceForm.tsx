@@ -39,7 +39,7 @@ import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } f
 // WAVE-CONSTRAINTS.md's "standard input treatment." text-base is mandatory: it's what stops
 // iOS from focus-zooming the viewport when a field is tapped.
 const INPUT_CLASS =
-  "w-full rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+  "w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
 
 // Every field label (and section pseudo-label: Status / Lists / Ratings) shares this exact
 // treatment too. These labels sit directly on the sheet's own bg-raised body (Sheet.tsx has no
@@ -229,7 +229,7 @@ function AddPlaceSheet({
       toast(`Added ${trimmedName}`);
       onClose();
     } catch {
-      toast("Couldn't save that place — try again");
+      toast("Couldn't save that place — try again", true);
       setSaving(false);
     }
   }
@@ -273,7 +273,7 @@ function AddPlaceSheet({
               onClick={() =>
                 setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
               }
-              className="min-h-11 shrink-0 text-sm font-semibold text-coral transition active:opacity-70"
+              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
             >
               Remove
             </button>

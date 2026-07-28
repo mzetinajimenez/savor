@@ -24,7 +24,7 @@ export default function Sheet({
 
   return (
     <div
-      className="anim-fade fixed inset-x-0 top-0 z-40 flex h-dvh items-end justify-center bg-[rgba(6,26,19,0.72)] sm:items-center sm:p-4"
+      className="anim-fade fixed inset-x-0 top-0 z-40 flex h-dvh items-end justify-center bg-ground-deep/80 sm:items-center sm:p-4"
       onMouseDown={(e) => {
         // Backdrop tap closes — but only when the press starts on the backdrop itself,
         // so a drag that ends outside the panel doesn't dismiss it.

@@ -51,7 +51,7 @@ export default function WeightsEditor({
       toast("Weights saved");
       onClose();
     } catch {
-      toast("Couldn't save weights — try again");
+      toast("Couldn't save weights — try again", true);
     } finally {
       setSaving(false);
     }
@@ -87,7 +87,7 @@ export default function WeightsEditor({
                 <div className="min-w-0">
                   <p className="truncate text-[0.95rem] font-medium text-cream">{c.name}</p>
                   {value === 0 ? (
-                    <p className="text-xs text-sage">Excluded from score</p>
+                    <p className="text-xs text-cream">Excluded from score</p>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">

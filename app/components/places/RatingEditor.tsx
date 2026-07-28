@@ -28,7 +28,7 @@ export default function RatingEditor({
     try {
       await setRating(place.id, criterionId, value);
     } catch {
-      toast("Couldn't save that rating");
+      toast("Couldn't save that rating", true);
     }
   }
 

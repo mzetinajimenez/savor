@@ -15,7 +15,7 @@ import { toast } from "@/app/components/Toast";
 // See WAVE-CONSTRAINTS.md's "standard input treatment" — every text input in this form shares
 // this exact class list so the app converges on one look.
 const INPUT_CLASS =
-  "w-full rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+  "w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
 
 // Matches PlaceForm's LABEL_CLASS: these labels sit directly on Sheet's own bg-raised body
 // (Sheet.tsx has no intermediate surface), where text-sage measures 3.85:1 and fails AA — so
@@ -72,7 +72,7 @@ export default function CategoryForm({
       onSaved?.();
       onClose();
     } catch {
-      toast("Couldn't save that list — try again");
+      toast("Couldn't save that list — try again", true);
     } finally {
       setSaving(false);
     }
@@ -87,7 +87,7 @@ export default function CategoryForm({
       onDeleted?.();
       onClose();
     } catch {
-      toast("Couldn't delete that list — try again");
+      toast("Couldn't delete that list — try again", true);
     } finally {
       setDeleting(false);
     }
@@ -142,7 +142,7 @@ export default function CategoryForm({
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
-                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep"
+                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
                   >
                     Cancel
                   </button>
@@ -150,7 +150,7 @@ export default function CategoryForm({
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="min-h-11 flex-1 rounded-sm bg-coral px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+                    className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
                   >
                     {deleting ? "Deleting…" : "Delete"}
                   </button>
@@ -160,7 +160,7 @@ export default function CategoryForm({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="min-h-11 text-sm font-semibold text-coral transition active:opacity-70"
+                className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
               >
                 Delete list
               </button>

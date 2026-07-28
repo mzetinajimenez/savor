@@ -84,7 +84,7 @@ function NavItem({ tab, active }: { tab: Tab; active: boolean }) {
       className={`flex min-h-11 flex-col items-center gap-0.5 py-1 transition ${
         active
           ? "text-gold shadow-[inset_0_2px_0_var(--color-gold)]"
-          : "text-sage active:text-sage"
+          : "text-sage active:text-cream"
       }`}
     >
       <span

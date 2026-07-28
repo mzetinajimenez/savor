@@ -98,7 +98,7 @@ function StoragePanel() {
       toast(granted ? "Protected against eviction" : "Browser declined to protect storage");
       await refresh();
     } catch {
-      toast("Couldn't request persistent storage");
+      toast("Couldn't request persistent storage", true);
     } finally {
       setRequesting(false);
     }
