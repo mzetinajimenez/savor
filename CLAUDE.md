@@ -79,6 +79,7 @@ sabor/
 │   ├── autocomplete.ts           # lookup sequencing — debounce, abort, stale-discard, cache
 │   ├── backup.ts                 # export / parseBackup / importBackup / summarizeBackup (JSON envelope)
 │   ├── useModalA11y.ts           # focus trap + Escape-to-close + body scroll-lock for overlays
+│   ├── useLongPress.ts           # long-press/hover-intent peek gesture (categories/[id]'s ranked rows)
 │   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup) and lib/social/ (index, parse, pickUrl)
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
