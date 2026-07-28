@@ -29,10 +29,10 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 };
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-ink-soft transition active:scale-95 active:bg-surface-sunk";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-raised px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep";
 
 const emberButtonClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-ember px-4 text-sm font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep";
 
 // Local-timezone-safe date formatting for a plain YYYY-MM-DD string (matches the pattern used by
 // VisitForm/JournalPage for the same `<input type="date">` format — deliberately not
@@ -82,7 +82,7 @@ export default function PlaceDetailPage() {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             Back to savor
           </Link>
@@ -141,25 +141,25 @@ export default function PlaceDetailPage() {
           type="button"
           onClick={handleStatusToggle}
           disabled={statusPending}
-          className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold uppercase tracking-wide transition active:scale-95 disabled:opacity-60 ${
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded-sm px-4 text-sm font-semibold uppercase tracking-wide transition active:scale-95 disabled:opacity-60 ${
             place.status === "been"
-              ? "bg-plum-tint text-plum"
-              : "bg-ember-tint text-ember-deep"
+              ? "bg-raised text-gold"
+              : "bg-raised text-gold"
           }`}
         >
           {STATUS_LABEL[place.status]}
         </button>
 
-        {subtitle ? <p className="mt-3 text-[0.95rem] text-ink-soft">{subtitle}</p> : null}
-        {place.address ? <p className="mt-1 text-sm text-ink-soft">{place.address}</p> : null}
-        {place.notes ? <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">{place.notes}</p> : null}
+        {subtitle ? <p className="mt-3 text-[0.95rem] text-sage">{subtitle}</p> : null}
+        {place.address ? <p className="mt-1 text-sm text-sage">{place.address}</p> : null}
+        {place.notes ? <p className="mt-3 text-[0.95rem] leading-relaxed text-cream">{place.notes}</p> : null}
 
         {place.sourceUrl ? (
           <a
             href={place.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-plum active:opacity-70"
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gold active:opacity-70"
           >
             <LinkGlyph className="h-4 w-4" />
             {place.sourcePlatform === "instagram"
@@ -193,7 +193,7 @@ export default function PlaceDetailPage() {
 
       <section className="px-4 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl text-plum">Ratings</h2>
+          <h2 className="font-display text-xl text-gold">Ratings</h2>
           <button
             type="button"
             onClick={() => setRatingEditorOpen(true)}
@@ -204,14 +204,14 @@ export default function PlaceDetailPage() {
         </div>
 
         {criteria === undefined ? null : criteria.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-soft">
+          <p className="mt-3 text-sm text-sage">
             Add rating criteria in Settings to start rating places.
           </p>
         ) : (
-          <div className="mt-3 flex flex-col divide-y divide-line rounded-card border border-line bg-surface px-4">
+          <div className="mt-3 flex flex-col divide-y divide-rule rounded-sm border border-rule bg-raised px-4">
             {criteria.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 py-3">
-                <span className="text-[0.95rem] text-ink">{c.name}</span>
+                <span className="text-[0.95rem] text-cream">{c.name}</span>
                 <RatingRow label={c.name} value={place.ratings[c.id]} />
               </div>
             ))}
@@ -220,9 +220,9 @@ export default function PlaceDetailPage() {
       </section>
 
       <section className="px-4 py-5">
-        <h2 className="font-display text-xl text-plum">Lists</h2>
+        <h2 className="font-display text-xl text-gold">Lists</h2>
         {categories === undefined ? null : categories.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-soft">
+          <p className="mt-3 text-sm text-sage">
             No lists yet — create one from the Lists tab.
           </p>
         ) : (
@@ -243,7 +243,7 @@ export default function PlaceDetailPage() {
 
       <section className="px-4 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl text-plum">Visits</h2>
+          <h2 className="font-display text-xl text-gold">Visits</h2>
           <button
             type="button"
             onClick={() => setVisitFormOpen(true)}
@@ -265,14 +265,14 @@ export default function PlaceDetailPage() {
             {visits.map((v) => (
               <li
                 key={v.id}
-                className="rounded-card border border-line bg-surface px-4 py-3 shadow-sm"
+                className="rounded-sm border border-rule bg-raised px-4 py-3 shadow-sm"
               >
-                <p className="text-sm font-semibold text-ink">{formatVisitDate(v.date)}</p>
+                <p className="text-sm font-semibold text-cream">{formatVisitDate(v.date)}</p>
                 {v.dishes ? (
-                  <p className="mt-0.5 truncate text-sm text-ink-soft">{v.dishes}</p>
+                  <p className="mt-0.5 truncate text-sm text-sage">{v.dishes}</p>
                 ) : null}
                 {v.notes ? (
-                  <p className="mt-0.5 truncate text-[0.82rem] text-ink-soft/80">{v.notes}</p>
+                  <p className="mt-0.5 truncate text-[0.82rem] text-sage/80">{v.notes}</p>
                 ) : null}
               </li>
             ))}
@@ -360,7 +360,7 @@ function PlaceEditSheet({
           type="submit"
           form="place-edit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -368,69 +368,69 @@ function PlaceEditSheet({
     >
       <form id="place-edit-form" onSubmit={handleSubmit} className="flex flex-col gap-5 py-1">
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-ink-soft">Name</span>
+          <span className="text-sm font-semibold text-sage">Name</span>
           <input
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Taco Spot"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-ink-soft">
-            Cuisine <span className="font-normal text-ink-soft/70">(optional)</span>
+          <span className="text-sm font-semibold text-sage">
+            Cuisine <span className="font-normal text-sage/70">(optional)</span>
           </span>
           <input
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             placeholder="Mexican, ramen, pizza…"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-ink-soft">
-            City <span className="font-normal text-ink-soft/70">(optional)</span>
+          <span className="text-sm font-semibold text-sage">
+            City <span className="font-normal text-sage/70">(optional)</span>
           </span>
           <input
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Austin"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-ink-soft">
-            Address <span className="font-normal text-ink-soft/70">(optional)</span>
+          <span className="text-sm font-semibold text-sage">
+            Address <span className="font-normal text-sage/70">(optional)</span>
           </span>
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="123 Main St"
-            className="min-h-11 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+            className="min-h-11 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-ink-soft">
-            Notes <span className="font-normal text-ink-soft/70">(optional)</span>
+          <span className="text-sm font-semibold text-sage">
+            Notes <span className="font-normal text-sage/70">(optional)</span>
           </span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="What to order, the vibe, anything worth remembering…"
-            className="resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+            className="resize-none rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
           />
         </label>
 
-        <div className="mt-1 border-t border-line pt-4">
+        <div className="mt-1 border-t border-rule pt-4">
           {confirmingDelete ? (
-            <div className="flex flex-col gap-3 rounded-xl bg-chili/10 p-3.5">
-              <p className="text-sm text-ink">
+            <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
+              <p className="text-sm text-cream">
                 Delete &ldquo;{place.name}&rdquo;? This hides the place and its history from
                 savor.
               </p>
@@ -438,7 +438,7 @@ function PlaceEditSheet({
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
-                  className="min-h-11 flex-1 rounded-full border border-line px-4 text-sm font-semibold text-ink-soft transition active:scale-95 active:bg-surface-sunk"
+                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep"
                 >
                   Cancel
                 </button>
@@ -446,7 +446,7 @@ function PlaceEditSheet({
                   type="button"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="min-h-11 flex-1 rounded-full bg-chili px-4 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-50"
+                  className="min-h-11 flex-1 rounded-sm bg-coral px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>
@@ -456,7 +456,7 @@ function PlaceEditSheet({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="min-h-11 text-sm font-semibold text-chili transition active:opacity-70"
+              className="min-h-11 text-sm font-semibold text-coral transition active:opacity-70"
             >
               Delete place
             </button>
