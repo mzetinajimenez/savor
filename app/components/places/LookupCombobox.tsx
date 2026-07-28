@@ -19,6 +19,14 @@ import { searchPlaces, type LookupResult } from "@/lib/lookup";
 const LISTBOX_ID = "place-lookup-listbox";
 const optionId = (index: number) => `place-lookup-option-${index}`;
 
+// Mirrors PlaceForm's own LABEL_CLASS / INPUT_CLASS exactly — this field lives in the
+// same sheet and must share its treatment even though it can't import a private const
+// from another component's module.
+const LABEL_CLASS =
+  "mb-1.5 block font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream";
+const INPUT_CLASS =
+  "w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+
 export default function LookupCombobox({
   value,
   onChange,
@@ -151,7 +159,7 @@ export default function LookupCombobox({
 
   return (
     <div>
-      <label htmlFor="place-name" className="mb-1 block text-sm font-semibold text-ink-soft">
+      <label htmlFor="place-name" className={LABEL_CLASS}>
         Name
       </label>
       <input
@@ -167,7 +175,7 @@ export default function LookupCombobox({
         onChange={(e) => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Taco Spot"
-        className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+        className={INPUT_CLASS}
       />
 
       {/* Announced to screen readers without stealing focus. */}
@@ -185,12 +193,7 @@ export default function LookupCombobox({
 
       {isOpen ? (
         <>
-          <ul
-            id={LISTBOX_ID}
-            role="listbox"
-            aria-label="Place suggestions"
-            className="mt-2 flex flex-col gap-1.5"
-          >
+          <ul id={LISTBOX_ID} role="listbox" aria-label="Place suggestions" className="mt-2 flex flex-col">
             {/*
               role="option" goes on the <li> itself, with no nested <button>. Two reasons:
               a listbox's children must be options, and putting role="option" on a button
@@ -207,15 +210,13 @@ export default function LookupCombobox({
                 role="option"
                 aria-selected={i === activeIndex}
                 onClick={() => choose(result)}
-                className={`min-h-11 cursor-pointer rounded-xl border px-3.5 py-2.5 transition active:scale-[0.99] ${
-                  i === activeIndex
-                    ? "border-plum bg-surface-sunk"
-                    : "border-line bg-surface active:bg-surface-sunk"
+                className={`min-h-11 cursor-pointer border-t border-rule px-1 py-2.5 transition active:scale-[0.99] ${
+                  i === activeIndex ? "bg-ground-deep" : "active:bg-ground-deep"
                 }`}
               >
-                <p className="text-sm font-semibold leading-snug text-ink">{result.name}</p>
+                <p className="text-sm font-semibold leading-snug text-cream">{result.name}</p>
                 {result.address || result.city ? (
-                  <p className="text-xs leading-snug text-ink-soft">
+                  <p className="text-xs leading-snug text-cream/80">
                     {[result.address, result.city].filter(Boolean).join(" · ")}
                   </p>
                 ) : null}
@@ -223,7 +224,7 @@ export default function LookupCombobox({
             ))}
           </ul>
           {/* ODbL requires attribution for OSM-derived results. */}
-          <p className="mt-1.5 text-xs text-ink-soft/70">
+          <p className="mt-1.5 text-xs text-cream/80">
             Results ©{" "}
             <a
               href="https://www.openstreetmap.org/copyright"
@@ -239,15 +240,15 @@ export default function LookupCombobox({
       ) : null}
 
       {state.status === "loading" ? (
-        <p className="mt-2 text-sm text-ink-soft">Searching…</p>
+        <p className="mt-2 text-sm text-cream/80">Searching…</p>
       ) : null}
 
       {state.status === "empty" ? (
-        <p className="mt-2 text-sm text-ink-soft">No matches — add manually.</p>
+        <p className="mt-2 text-sm text-cream/80">No matches — add manually.</p>
       ) : null}
 
       {state.status === "error" ? (
-        <p className="mt-2 text-sm text-ink-soft">Couldn&apos;t reach lookup — add manually.</p>
+        <p className="mt-2 text-sm text-cream/80">Couldn&apos;t reach lookup — add manually.</p>
       ) : null}
     </div>
   );

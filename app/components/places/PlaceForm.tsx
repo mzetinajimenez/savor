@@ -313,62 +313,21 @@ function AddPlaceSheet({
         ) : null}
 
         <div>
-          <label htmlFor="place-name" className={LABEL_CLASS}>
-            Name
-          </label>
-          <input
-            id="place-name"
-            type="text"
+          {/* Name + live OSM lookup. The combobox owns both; see LookupCombobox.tsx. */}
+          <LookupCombobox
             value={form.name}
-            onChange={(e) => {
-              const name = e.target.value;
-              setForm((f) => ({ ...f, name }));
-              // Editing the name invalidates any prior lookup — a stale result list (or "nothing
-              // found" hint) shouldn't linger and look like it applies to the new text.
-              setLookupResults([]);
-              setSearched(false);
-            }}
-            placeholder="Taco Spot"
-            autoComplete="off"
-            className={INPUT_CLASS}
+            onChange={handleNameChange}
+            onSelect={handleSelectResult}
+            autoLookup={Boolean(initial?.autoLookup && initial.name)}
+            searchNonce={searchNonce}
           />
-
-          {trimmedName ? (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={handleLookup}
-                disabled={lookupLoading}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule disabled:opacity-60"
-              >
-                {lookupLoading ? "Looking up…" : "Look up"}
-              </button>
-            </div>
-          ) : null}
-
-          {lookupResults.length > 0 ? (
-            <ul className="mt-2 flex flex-col">
-              {lookupResults.map((result, i) => (
-                <li key={`${result.lat}-${result.lng}-${i}`} className="border-t border-rule">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectResult(result)}
-                    className="min-h-11 w-full px-1 py-2.5 text-left transition active:bg-ground-deep"
-                  >
-                    <p className="text-sm font-semibold leading-snug text-cream">{result.name}</p>
-                    {result.address || result.city ? (
-                      <p className="text-xs leading-snug text-cream/80">
-                        {result.address ?? result.city}
-                      </p>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {searched && !lookupLoading && lookupResults.length === 0 ? (
-            <p className="mt-2 text-sm text-cream/80">Nothing found — add manually.</p>
+          {/* The only visible signal that a suggestion's lat/lng/osmId are attached —
+              and why editing the name after selecting one is a legible action (the pin
+              disappears) rather than a silent trap. See handleNameChange above. */}
+          {form.lat !== undefined || form.osmId !== undefined ? (
+            <p className="mt-1.5 text-xs text-cream/80">
+              📍 {[form.address, form.city].filter(Boolean).join(" · ")}
+            </p>
           ) : null}
         </div>
 
