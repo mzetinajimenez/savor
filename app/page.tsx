@@ -102,7 +102,7 @@ export default function PlacesPage() {
       ) : null}
 
       {places && places.length > 0 ? (
-        <ul className="flex flex-col gap-2.5 px-4 py-4">
+        <ul className="flex flex-col">
           {places.map((place) => (
             <li key={place.id}>
               <PlaceCard place={place} liveCriterionIds={liveCriterionIds} />
@@ -123,7 +123,7 @@ function SearchInput({
 }) {
   return (
     <div className="relative">
-      <SearchGlyph className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
+      <SearchGlyph className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cream/80" />
       <input
         type="search"
         inputMode="search"
@@ -131,7 +131,7 @@ function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search places, cuisine, city…"
         aria-label="Search places"
-        className="h-11 w-full rounded-full border border-line bg-surface pl-9 pr-3 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+        className="w-full rounded-sm border border-rule bg-raised pl-9 pr-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
       />
     </div>
   );
