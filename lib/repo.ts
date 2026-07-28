@@ -66,6 +66,7 @@ export const placeFields = {
     )
     .optional(),
   sourcePlatform: z.enum(["instagram", "tiktok"]).optional(),
+  osmId: z.string().optional(),
 };
 
 // Same 1-5 integer range setRating already enforces (via Math.min/Math.max), applied at the

@@ -15,10 +15,11 @@
 // listener: `addEventListener` on mount, `removeEventListener` on cleanup. Any number of
 // emitters, exactly one listener.
 //
-// Flow inside one sheet: name (required, optionally pre-seeded) -> optional OSM lookup (tap a
-// result to autofill name/address/city/lat/lng; auto-run once on mount when the prefill asks
-// for it) -> been/want_to_try status toggle (default "been", or "want_to_try" when opened from
-// a prefill) -> optional cuisine/notes -> category checkboxes (useCategories) -> if status is
+// Flow inside one sheet: name (required, optionally pre-seeded) -> live OSM suggestions as you
+// type (LookupCombobox owns the debounce/abort/cache timing — see lib/autocomplete.ts — and
+// fires immediately, with no debounce, when the prefill asks for it) -> been/want_to_try status
+// toggle (default "been", or "want_to_try" when opened from a prefill) -> optional cuisine/notes
+// -> category checkboxes (useCategories) -> if status is
 // "been", one skippable RatingRow per live criterion (useCriteria) -> Save builds the ratings
 // record from whichever rows were touched and makes exactly one repo.createPlace call (carrying
 // sourceUrl/sourcePlatform through when present). Cancel / the sheet's own close button /
@@ -26,7 +27,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useCategories, useCriteria } from "@/lib/hooks";
-import { searchPlaces, type LookupResult } from "@/lib/lookup";
+import type { LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
@@ -34,6 +35,7 @@ import type { PlaceStatus } from "@/lib/types";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
 import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
+import LookupCombobox from "./LookupCombobox";
 
 // Every text input, textarea and select in this form shares this exact treatment — see
 // WAVE-CONSTRAINTS.md's "standard input treatment." text-base is mandatory: it's what stops
@@ -62,6 +64,7 @@ function emptyForm(initial?: PlacePrefill) {
     city: undefined as string | undefined,
     lat: undefined as number | undefined,
     lng: undefined as number | undefined,
+    osmId: undefined as string | undefined,
     categoryIds: [] as string[],
     ratings: {} as Record<string, number>,
     sourceUrl: initial?.sourceUrl,
@@ -99,35 +102,18 @@ function AddPlaceSheet({
   const criteria = useCriteria();
 
   const [form, setForm] = useState(() => emptyForm(initial));
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
-  const [searched, setSearched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
   const [pasteHint, setPasteHint] = useState(false);
   const [resolving, setResolving] = useState(false);
+  // Bumped to ask LookupCombobox to search the current name immediately. The paste-a-link flow
+  // resolves a venue name after mount, so it can't use the combobox's mount-time autoLookup.
+  const [searchNonce, setSearchNonce] = useState(0);
 
   const trimmedName = form.name.trim();
   const canSave = trimmedName.length > 0 && !saving;
-
-  async function runLookup(name: string) {
-    if (!name || lookupLoading) return;
-    setLookupLoading(true);
-    setSearched(false);
-    // searchPlaces degrades to [] on any failure (bad shape, non-200, network throw) — a failed
-    // lookup and a lookup with no matches look identical here, both land on the "nothing found"
-    // hint below, and the form stays fully usable manually either way.
-    const results = await searchPlaces(name);
-    setLookupResults(results);
-    setSearched(true);
-    setLookupLoading(false);
-  }
-
-  async function handleLookup() {
-    await runLookup(trimmedName);
-  }
 
   async function handlePasteResolve(e: FormEvent) {
     e.preventDefault();
@@ -148,6 +134,13 @@ function AddPlaceSheet({
       setForm((f) => ({
         ...f,
         name: link?.nameGuess ?? f.name,
+        // A resolved nameGuess replaces the name, same as a manual edit — so any
+        // previously-captured location is just as stale here as it is in
+        // handleNameChange above, for the same reason. No nameGuess means the name
+        // (and thus the location) is untouched, so leave it alone.
+        ...(link?.nameGuess
+          ? { address: undefined, city: undefined, lat: undefined, lng: undefined, osmId: undefined }
+          : null),
         sourceUrl: link?.url ?? candidate,
         sourcePlatform: link?.platform,
       }));
@@ -159,23 +152,14 @@ function AddPlaceSheet({
       // first/last element, see lib/useModalA11y.ts). The Name input is always present in the
       // DOM regardless of pasteOpen, so refocusing it here is safe with no timing concern.
       document.getElementById("place-name")?.focus();
-      if (link?.nameGuess) void runLookup(link.nameGuess);
+      // The name just changed programmatically, and React doesn't fire the combobox's onChange
+      // for that — so nothing would search for the venue we just resolved. Bumping the nonce is
+      // the explicit ask.
+      if (link?.nameGuess) setSearchNonce((n) => n + 1);
     } finally {
       setResolving(false);
     }
   }
-
-  useEffect(() => {
-    // Run the OSM lookup once, on mount, when opened from a prefill that asks for it (share-link
-    // import) — lands the user straight on the geocode picker. This is a one-shot mount kick-off
-    // (not a subscription loop), so handleLookup's own synchronous setLookupLoading/setSearched
-    // calls are the intended, one-time behavior the cascading-render check is guarding against.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (initial?.autoLookup && initial.name) void handleLookup();
-    // Deliberately not in a dep array: this must fire exactly once per fresh sheet instance, not
-    // re-fire as `initial`/`handleLookup` identity changes across re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   function handleSelectResult(result: LookupResult) {
     setForm((f) => ({
@@ -185,9 +169,30 @@ function AddPlaceSheet({
       city: result.city,
       lat: result.lat,
       lng: result.lng,
+      osmId: result.osmId,
     }));
-    setLookupResults([]);
-    setSearched(false);
+  }
+
+  // A selection captures lat/lng/osmId alongside the name. If the user then edits the
+  // name, that captured location is almost certainly wrong for the new name — and
+  // unlike every other field here, lat/lng/osmId are never shown or editable anywhere
+  // else in the app (see app/places/[id]/page.tsx's PlaceEditSheet), so a stale value
+  // that slips into a saved Place can never be corrected through any UI. Clearing it on
+  // edit is cheap insurance; the 📍 line below is what lets the user see it happen.
+  function handleNameChange(name: string) {
+    setForm((f) =>
+      f.lat === undefined && f.osmId === undefined
+        ? { ...f, name }
+        : {
+            ...f,
+            name,
+            address: undefined,
+            city: undefined,
+            lat: undefined,
+            lng: undefined,
+            osmId: undefined,
+          }
+    );
   }
 
   function toggleCategory(id: string) {
@@ -220,6 +225,7 @@ function AddPlaceSheet({
         city: form.city,
         lat: form.lat,
         lng: form.lng,
+        osmId: form.osmId,
         notes: form.notes.trim() || undefined,
         categoryIds: form.categoryIds,
         ratings: form.status === "been" ? form.ratings : {},
@@ -306,7 +312,6 @@ function AddPlaceSheet({
           </div>
         ) : null}
 
-        {/* Name + OSM lookup */}
         <div>
           <label htmlFor="place-name" className={LABEL_CLASS}>
             Name
