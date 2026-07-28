@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 125 tests today; keep them passing.
+  must all pass. 177 tests in 10 files today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
   asking first — prefer a built-in or a few lines of local code. (The PWA icons,
@@ -36,7 +36,7 @@ agent) making changes.
 sabor/
 ├── app/                          # Next.js App Router — all UI + the one API route
 │   ├── layout.tsx                # Root layout: fonts, metadata + viewport, mounts AppInit / BottomNav / Toaster / AddPlaceHost
-│   ├── globals.css               # Tailwind v4 import + "Cellar" @theme tokens + motion keyframes
+│   ├── globals.css               # Tailwind v4 import + "Supper Club" @theme tokens + motion keyframes
 │   ├── page.tsx                  # "/" Places tab — search + status filter + place list (usePlaces)
 │   ├── categories/
 │   │   ├── page.tsx              #   "/categories" Lists tab — all lists (useCategories)
@@ -132,13 +132,45 @@ path around the repo.
 - **No context providers, no state library.** Dexie `liveQuery` **is** the state
   layer — components re-render when the DB changes. Cross-cutting one-offs
   (toasts, the add-place event) use tiny module-level pub/sub, not React context.
+- **No component library — decided, not defaulted.** Not Mantine, not shadcn/ui,
+  not Base UI. What makes savor's look distinctive is tokens, type and layout —
+  exactly the surface a component library wants to own, so adopting one trades a
+  distinctive look for a competent generic one. Mantine specifically carries
+  documented Tailwind v4 integration cost (`postcss-preset-mantine` alongside
+  `@tailwindcss/postcss`, hand-managed `@layer` ordering) and its
+  `Popover`-portaling `Combobox` fights the `h-dvh` bottom sheet with the iOS
+  keyboard raised. **Scoped to presentation only:** if a specific interaction ever
+  needs a hard accessibility state machine, adopting a *headless* primitive for
+  that one interaction is a separate decision on its own merits, and is not
+  foreclosed by this.
 
 ## Conventions
 
-- **Cellar tokens only.** Colors, fonts, and radii come from the `@theme` tokens
-  in `app/globals.css` (`plum`, `ember`, `gold`, `shell`, `surface`, `ink`, …).
-  No raw hex or off-palette Tailwind colors in components. The look: wine-plum
-  structure, ember action/ratings, gold score seals, on clay parchment.
+- **Supper Club tokens only.** Colors, fonts, and radii come from the `@theme`
+  tokens in `app/globals.css` (`ground`, `ground-deep`, `raised`, `rule`, `cream`,
+  `sage`, `gold`, `coral`, …). No raw hex or off-palette Tailwind colors in
+  components — `lib/theme-contract.test.ts` enforces this and fails the build if a
+  raw hex or an unknown token appears in `app/`. The look: restaurant ephemera —
+  bottle green ground, cream ink, butter-gold score seals; Bodoni Moda display,
+  Hanken Grotesk body, Archivo utility caps.
+- **Gold is yes, coral is careful.** Gold means primary action, active state and
+  score seals. Coral means destructive and error, and **nothing else** — not
+  want-to-try markers, not accents.
+- **Contrast is a property of the pair, not the token.** `sage` is text-legal on
+  `ground` (5.23:1) and `ground-deep` (6.45:1) **only** — on `raised` it is 3.85:1
+  and fails AA, so secondary text there must be `cream`. `sage-deep` is non-text
+  only (rules, dividers, inactive glyph strokes). With an opacity modifier,
+  compute the alpha-composited ratio: `cream/60` on `raised` fails at 3.86:1,
+  `cream/80` passes at 5.55:1. Never pair a token with a surface without checking.
+- **Rounding is rare and deliberate.** `0` is the default — list rows and sections
+  are flat and separated by `border-t border-rule` hairlines, never floating
+  cards. `rounded-sm` (4px) for inputs, chips, sheets and buttons. `rounded-full`
+  is reserved for the score seal and small circular indicators (rating beads,
+  status dots, spinners, the FAB) — never for cards, rows, buttons or pills. A
+  gap between hairline-separated rows re-creates the card look out of whitespace;
+  don't add one.
+- **Text on a gold background is `text-ground`, never `text-white`** (white on
+  `gold-deep` is 2.56:1 and fails AA).
 - **Read through hooks, write through repo.** UI uses `use*` hooks from
   `lib/hooks.ts` to read and `lib/repo.ts` functions to write. Never import Dexie
   in a component.
