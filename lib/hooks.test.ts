@@ -4,6 +4,7 @@ import { db } from "./db";
 import {
   queryCategories,
   queryCategory,
+  queryCategoryCities,
   queryCriteria,
   queryPlace,
   queryPlaces,
@@ -386,5 +387,45 @@ describe("queryRankedCategory", () => {
 
     const result = await queryRankedCategory(category.id);
     expect(result.ranked).toEqual([]);
+  });
+});
+
+// ---- queryCategoryCities ----
+
+describe("queryCategoryCities", () => {
+  it("returns distinct non-empty cities, sorted case-insensitively", async () => {
+    const category = await createCategory({ name: "Tacos", sortOrder: 0 });
+    await createPlace({ name: "A", status: "been", city: "Austin", categoryIds: [category.id] });
+    await createPlace({
+      name: "B",
+      status: "want_to_try",
+      city: "bremen",
+      categoryIds: [category.id],
+    });
+    await createPlace({ name: "C", status: "been", city: "Austin", categoryIds: [category.id] });
+    await createPlace({ name: "D", status: "been", categoryIds: [category.id] }); // no city
+
+    expect(await queryCategoryCities(category.id)).toEqual(["Austin", "bremen"]);
+  });
+
+  it("excludes places from other categories and tombstoned places", async () => {
+    const category = await createCategory({ name: "Tacos", sortOrder: 0 });
+    const other = await createCategory({ name: "Ramen", sortOrder: 1 });
+    await createPlace({ name: "A", status: "been", city: "Austin", categoryIds: [category.id] });
+    await createPlace({ name: "B", status: "been", city: "Denver", categoryIds: [other.id] });
+    const gone = await createPlace({
+      name: "C",
+      status: "been",
+      city: "Laredo",
+      categoryIds: [category.id],
+    });
+    await deletePlace(gone.id);
+
+    expect(await queryCategoryCities(category.id)).toEqual(["Austin"]);
+  });
+
+  it("returns an empty array for a category with no cities", async () => {
+    const category = await createCategory({ name: "Tacos", sortOrder: 0 });
+    expect(await queryCategoryCities(category.id)).toEqual([]);
   });
 });
