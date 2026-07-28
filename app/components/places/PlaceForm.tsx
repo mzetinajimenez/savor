@@ -178,7 +178,7 @@ function AddPlaceSheet({
   // unlike every other field here, lat/lng/osmId are never shown or editable anywhere
   // else in the app (see app/places/[id]/page.tsx's PlaceEditSheet), so a stale value
   // that slips into a saved Place can never be corrected through any UI. Clearing it on
-  // edit is cheap insurance; the 📍 line below is what lets the user see it happen.
+  // edit is cheap insurance; the City/Address inputs below are what let the user see it happen.
   function handleNameChange(name: string) {
     setForm((f) =>
       f.lat === undefined && f.osmId === undefined
@@ -221,8 +221,8 @@ function AddPlaceSheet({
         name: trimmedName,
         status: form.status,
         cuisine: form.cuisine.trim() || undefined,
-        address: form.address,
-        city: form.city,
+        address: form.address?.trim() || undefined,
+        city: form.city?.trim() || undefined,
         lat: form.lat,
         lng: form.lng,
         osmId: form.osmId,

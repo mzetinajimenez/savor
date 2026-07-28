@@ -1,8 +1,9 @@
 "use client";
 
-// One row in the Places list: name + status badge, a "cuisine · city" subtitle (either half
-// omitted when missing), and a gold score seal when the place has at least one live, weighted,
-// rated criterion. The whole row is a link to `/places/[id]`.
+// One row in the Places list: name + status badge, an address line (omitted when missing), a
+// "cuisine · city" subtitle beneath that (either half omitted when missing), and a gold score
+// seal when the place has at least one live, weighted, rated criterion. The whole row is a link
+// to `/places/[id]`.
 //
 // Deliberately a flat ruled row, not a card: no radius, no per-row background, no shadow. Rows
 // are separated only by the `border-t border-rule` hairline set on the row itself — the list
