@@ -129,18 +129,6 @@ export async function queryRankedCategory(
   return { ranked, wantToTry };
 }
 
-/**
- * Distinct, non-empty `city` values among a category's non-tombstoned places (both
- * "been" and "want_to_try"), sorted case-insensitively. Empty when the category has no
- * places with a city — the caller (the city filter chip row) hides itself in that case
- * rather than rendering an empty filter bar.
- */
-export async function queryCategoryCities(categoryId: string): Promise<string[]> {
-  const places = await queryPlaces({ categoryId });
-  const cities = new Set(places.map((p) => p.city).filter((c): c is string => Boolean(c)));
-  return [...cities].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-}
-
 // ---- hooks (thin useLiveQuery wrappers) ----
 
 export function usePlaces(filter?: PlacesFilter): Place[] | undefined {
@@ -174,10 +162,6 @@ export function useRankedCategory(
   id: string
 ): { ranked: RankedEntry[]; wantToTry: Place[] } | undefined {
   return useLiveQuery(() => queryRankedCategory(id), [id]);
-}
-
-export function useCategoryCities(id: string): string[] | undefined {
-  return useLiveQuery(() => queryCategoryCities(id), [id]);
 }
 
 // ---- app init ----

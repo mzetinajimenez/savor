@@ -1,14 +1,17 @@
 "use client";
 
-// Category detail: header (emoji + name, Weights + Edit actions), a Ranked section (rank #, tie
-// marker, gold score seal — tap to a place, a dead link until a later task lands) and a Want to
-// try section (plain rows). A missing/tombstoned category renders a friendly "not found" state
+// Category detail: header (emoji + name, Weights + Edit actions), then two tabs driven by a
+// `?tab=` URL param — Ranked (rank #, tie marker, gold score seal, address line) and Want to try
+// (dot marker, place name, address line). A city filter chip row (driven by `?city=`, derived
+// from the places actually visible in either tab) sits above the tabbed content when the
+// category has at least one city among its ranked/want-to-try places. Both tabs link each row to
+// its place at /places/[id]. A missing/tombstoned category renders a friendly "not found" state
 // instead of the detail chrome.
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState, type ReactNode } from "react";
-import { useCategory, useCategoryCities, useRankedCategory } from "@/lib/hooks";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
+import { useCategory, useRankedCategory } from "@/lib/hooks";
 import { Chip, EmptyState, HeaderShell, ScoreBadge } from "@/app/components/ui";
 import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
@@ -43,7 +46,22 @@ function CategoryDetailInner() {
 
   const tab: "ranked" | "want" = searchParams.get("tab") === "want" ? "want" : "ranked";
   const cityFilter = searchParams.get("city");
-  const cities = useCategoryCities(id);
+  // Derived from the same rankedData the page already fetches (matching app/page.tsx:40-46's
+  // cuisine-chip pattern), not a separate DB query — this guarantees every chip corresponds to
+  // at least one place actually visible in one of the two tabs. A city on a "been" place that
+  // rankCategory excludes (no contributing rating, so composite score is null) is correctly
+  // invisible here too, since that place never appears in `ranked` or `wantToTry` either.
+  const cities = useMemo(() => {
+    if (!rankedData) return undefined;
+    const set = new Set<string>();
+    for (const entry of rankedData.ranked) {
+      if (entry.place.city) set.add(entry.place.city);
+    }
+    for (const place of rankedData.wantToTry) {
+      if (place.city) set.add(place.city);
+    }
+    return [...set].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  }, [rankedData]);
 
   // Shared by the tab switch here and the city filter in Task 6. Uses replace (not push)
   // so switching a tab or a filter chip never grows the history stack.
