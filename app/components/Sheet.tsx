@@ -56,7 +56,7 @@ export default function Sheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-cream transition active:scale-90 active:bg-ground-deep"
+              className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-sm text-cream transition active:scale-90 active:bg-ground-deep"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
                 <path
