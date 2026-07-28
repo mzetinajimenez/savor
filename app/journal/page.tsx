@@ -63,7 +63,7 @@ function LogVisitButton({ onClick, className = "" }: { onClick: () => void; clas
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full bg-ember font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-sm bg-gold font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep ${className}`}
     >
       <PlusGlyph className="h-4 w-4" />
       Log a visit
@@ -108,13 +108,13 @@ export default function JournalPage() {
           {groups.map((group, i) => (
             <section key={group.date}>
               <h2
-                className={`pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-ink-soft ${
+                className={`pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-sage ${
                   i === 0 ? "pt-4" : "pt-5"
                 }`}
               >
                 {formatGroupHeading(group.date)}
               </h2>
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col">
                 {group.visits.map((visit) => (
                   <VisitCard
                     key={visit.id}
