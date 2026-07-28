@@ -321,14 +321,6 @@ function AddPlaceSheet({
             autoLookup={Boolean(initial?.autoLookup && initial.name)}
             searchNonce={searchNonce}
           />
-          {/* The only visible signal that a suggestion's lat/lng/osmId are attached —
-              and why editing the name after selecting one is a legible action (the pin
-              disappears) rather than a silent trap. See handleNameChange above. */}
-          {form.lat !== undefined || form.osmId !== undefined ? (
-            <p className="mt-1.5 text-xs text-cream/80">
-              📍 {[form.address, form.city].filter(Boolean).join(" · ")}
-            </p>
-          ) : null}
         </div>
 
         {/* Status */}
@@ -361,6 +353,36 @@ function AddPlaceSheet({
             value={form.cuisine}
             onChange={(e) => setForm((f) => ({ ...f, cuisine: e.target.value }))}
             placeholder="Mexican, ramen, pizza…"
+            className={INPUT_CLASS}
+          />
+        </div>
+
+        {/* City (optional) */}
+        <div>
+          <label htmlFor="place-city" className={LABEL_CLASS}>
+            City <span className={OPTIONAL_CLASS}>(optional)</span>
+          </label>
+          <input
+            id="place-city"
+            type="text"
+            value={form.city ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value || undefined }))}
+            placeholder="Austin"
+            className={INPUT_CLASS}
+          />
+        </div>
+
+        {/* Address (optional) */}
+        <div>
+          <label htmlFor="place-address" className={LABEL_CLASS}>
+            Address <span className={OPTIONAL_CLASS}>(optional)</span>
+          </label>
+          <input
+            id="place-address"
+            type="text"
+            value={form.address ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, address: e.target.value || undefined }))}
+            placeholder="123 Main St"
             className={INPUT_CLASS}
           />
         </div>
