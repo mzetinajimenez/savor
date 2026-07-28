@@ -193,7 +193,7 @@ export default function PlaceDetailPage() {
 
       <section className="px-4 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl text-gold">Ratings</h2>
+          <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Ratings</h2>
           <button
             type="button"
             onClick={() => setRatingEditorOpen(true)}
@@ -220,7 +220,7 @@ export default function PlaceDetailPage() {
       </section>
 
       <section className="px-4 py-5">
-        <h2 className="font-display text-xl text-gold">Lists</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Lists</h2>
         {categories === undefined ? null : categories.length === 0 ? (
           <p className="mt-3 text-sm text-sage">
             No lists yet — create one from the Lists tab.
@@ -243,7 +243,7 @@ export default function PlaceDetailPage() {
 
       <section className="px-4 py-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl text-gold">Visits</h2>
+          <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Visits</h2>
           <button
             type="button"
             onClick={() => setVisitFormOpen(true)}

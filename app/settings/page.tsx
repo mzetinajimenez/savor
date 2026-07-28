@@ -23,28 +23,28 @@ export default function SettingsPage() {
       <HeaderShell title="Settings" />
 
       <section className="px-4 pt-4">
-        <h2 className="font-display text-xl text-gold">Rating criteria</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Rating criteria</h2>
         <div className="mt-3">
           <CriteriaEditor />
         </div>
       </section>
 
       <section className="px-4 py-6">
-        <h2 className="font-display text-xl text-gold">Storage</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Storage</h2>
         <div className="mt-3">
           <StoragePanel />
         </div>
       </section>
 
       <section className="px-4 py-6">
-        <h2 className="font-display text-xl text-gold">Backup</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Backup</h2>
         <div className="mt-3">
           <BackupPanel />
         </div>
       </section>
 
       <section className="px-4 pb-8">
-        <h2 className="font-display text-xl text-gold">About</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">About</h2>
         <div className="mt-3 rounded-sm border border-rule bg-raised px-4 py-3.5 shadow-sm">
           <p className="font-display text-lg text-cream">savor v1</p>
           {/* text-cream, not text-sage: this card sits on bg-raised, where sage measures

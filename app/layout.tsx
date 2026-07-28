@@ -72,7 +72,9 @@ export default function RootLayout({
         {/* Single-mount data touchpoint: seeds the DB + requests persistent storage. */}
         <AppInit />
         {/* Content clears the fixed bottom nav (nav + FAB overhang + safe area). */}
-        <main className="mx-auto w-full max-w-xl pb-[calc(6rem+env(safe-area-inset-bottom))]">
+        {/* Clears the fixed nav AND the FAB, which overhangs ~1.75rem above the bar —
+            6rem cleared the bar alone and let the FAB sit on top of trailing content. */}
+        <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))]">
           {children}
         </main>
         <BottomNav />
