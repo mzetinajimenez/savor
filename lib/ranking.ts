@@ -129,3 +129,135 @@ export function rankCategory(
     };
   });
 }
+
+export interface CriterionContribution {
+  criterionId: string;
+  name: string;
+  weight: number;
+  rating: number | null;
+  included: boolean;
+}
+
+export interface ScoreExplanation {
+  score: number | null;
+  contributions: CriterionContribution[];
+}
+
+export interface CategoryScore {
+  categoryId: string;
+  name: string;
+  score: number | null;
+}
+
+/**
+ * Explains a place's composite score for one category: every LIVE criterion (tombstoned ones
+ * are omitted entirely — same contract as compositeScore), its effective weight (missing key ->
+ * 1), the place's rating for it (or null if unrated), and whether it actually contributed
+ * (`included`: weight > 0 && rating != null). `score` is exactly what `compositeScore` would
+ * return for these same inputs — null when nothing contributes.
+ */
+export function explainScore(
+  place: Place,
+  category: Category,
+  criteria: Criterion[]
+): ScoreExplanation {
+  const liveCriteria = criteria.filter((c) => c.deletedAt === null);
+  const contributions: CriterionContribution[] = liveCriteria.map((c) => {
+    const weight = category.weights[c.id] ?? 1;
+    const rating = place.ratings[c.id] ?? null;
+    return {
+      criterionId: c.id,
+      name: c.name,
+      weight,
+      rating,
+      included: weight > 0 && rating !== null,
+    };
+  });
+
+  const liveCriterionIds = new Set(liveCriteria.map((c) => c.id));
+  const score = compositeScore(place.ratings, category.weights, liveCriterionIds);
+
+  return { score, contributions };
+}
+
+/**
+ * The single contribution "carrying the most weight" in a score: the included contribution with
+ * the strictly highest weight. Returns null when fewer than two criteria are included (nothing
+ * for it to be "more dominant" than) or when the top weight is tied between two or more
+ * contributions (no single answer) — both cases fall back to a generic "counts equally"
+ * message in `summarizeScore`.
+ */
+export function dominantContribution(
+  contributions: CriterionContribution[]
+): CriterionContribution | null {
+  const included = contributions.filter((c) => c.included);
+  if (included.length < 2) return null;
+
+  const maxWeight = Math.max(...included.map((c) => c.weight));
+  const atMax = included.filter((c) => c.weight === maxWeight);
+  return atMax.length === 1 ? atMax[0] : null;
+}
+
+/**
+ * A place's composite score in every category it belongs to (from `place.categoryIds`), in the
+ * given `categories` order. Each entry's `score` follows `compositeScore`'s own null contract —
+ * null when nothing contributes in that category.
+ */
+export function scoreAcrossCategories(
+  place: Place,
+  categories: Category[],
+  criteria: Criterion[]
+): CategoryScore[] {
+  const liveCriterionIds = new Set(
+    criteria.filter((c) => c.deletedAt === null).map((c) => c.id)
+  );
+  return categories
+    .filter((cat) => place.categoryIds.includes(cat.id))
+    .map((cat) => ({
+      categoryId: cat.id,
+      name: cat.name,
+      score: compositeScore(place.ratings, cat.weights, liveCriterionIds),
+    }));
+}
+
+/**
+ * A plain-language sentence explaining a score: names the dominant criterion (or says every
+ * criterion counts equally when there isn't one), then — if the place belongs to another
+ * category with its own score — names whichever one diverges MOST from this score, to make
+ * per-category weighting concrete rather than abstract ("the same ratings would score X in Y").
+ * `currentCategoryId` excludes the category this explanation is already for from that
+ * comparison. This is the only place savor's per-list weighting is stated in words.
+ */
+export function summarizeScore(
+  currentCategoryId: string,
+  explanation: ScoreExplanation,
+  scoresAcrossCategories: CategoryScore[]
+): string {
+  if (explanation.score === null) return "No ratings contribute to this score yet.";
+
+  const dominant = dominantContribution(explanation.contributions);
+  const sentences: string[] = [
+    dominant
+      ? `${dominant.name} (×${dominant.weight}) carries the most weight here.`
+      : "Every rated criterion counts equally here.",
+  ];
+
+  let mostDivergent: { name: string; score: number } | null = null;
+  for (const other of scoresAcrossCategories) {
+    if (other.categoryId === currentCategoryId || other.score === null) continue;
+    const score = other.score;
+    if (
+      !mostDivergent ||
+      Math.abs(score - explanation.score) > Math.abs(mostDivergent.score - explanation.score)
+    ) {
+      mostDivergent = { name: other.name, score };
+    }
+  }
+  if (mostDivergent) {
+    sentences.push(
+      `The same ratings would score ${formatScore(mostDivergent.score)} in ${mostDivergent.name}.`
+    );
+  }
+
+  return sentences.join(" ");
+}
