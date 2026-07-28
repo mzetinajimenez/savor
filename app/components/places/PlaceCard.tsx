@@ -29,8 +29,7 @@ export default function PlaceCard({
   // compositeScore's contract. Unrated places (or ones whose only ratings are for
   // deleted/unrated criteria) get null back, so no badge renders.
   const score = compositeScore(place.ratings, {}, liveCriterionIds);
-  // Place.address/city exist but nothing populates address yet (only OSM lookup sets city, and
-  // no form field exposes either) — cuisine/city is the only secondary content available today.
+  // Address gets its own line (below); cuisine/city stays a joined subtitle beneath that.
   // Render nothing (not an empty line / placeholder dash) when a place has neither.
   const subtitle = [place.cuisine, place.city].filter(Boolean).join(" · ");
 
@@ -64,6 +63,9 @@ export default function PlaceCard({
             </span>
           ) : null}
         </div>
+        {place.address ? (
+          <p className="mt-0.5 truncate text-[0.6875rem] text-sage">{place.address}</p>
+        ) : null}
         {subtitle ? <p className="mt-0.5 truncate text-[0.6875rem] text-sage">{subtitle}</p> : null}
       </div>
       {score !== null ? <ScoreBadge score={score} size="sm" className="shrink-0" /> : null}
