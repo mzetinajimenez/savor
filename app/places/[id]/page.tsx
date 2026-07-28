@@ -367,7 +367,7 @@ function PlaceEditSheet({
     >
       <form id="place-edit-form" onSubmit={handleSubmit} className="flex flex-col gap-5 py-1">
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-sage">Name</span>
+          <span className="text-sm font-semibold text-cream">Name</span>
           <input
             autoFocus
             value={name}
@@ -378,7 +378,7 @@ function PlaceEditSheet({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-sage">
+          <span className="text-sm font-semibold text-cream">
             Cuisine <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
@@ -390,7 +390,7 @@ function PlaceEditSheet({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-sage">
+          <span className="text-sm font-semibold text-cream">
             City <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
@@ -402,7 +402,7 @@ function PlaceEditSheet({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-sage">
+          <span className="text-sm font-semibold text-cream">
             Address <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <input
@@ -414,7 +414,7 @@ function PlaceEditSheet({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-semibold text-sage">
+          <span className="text-sm font-semibold text-cream">
             Notes <span className="font-normal text-cream/80">(optional)</span>
           </span>
           <textarea
