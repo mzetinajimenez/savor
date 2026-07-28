@@ -8,8 +8,8 @@
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, type ReactNode } from "react";
-import { useCategory, useRankedCategory } from "@/lib/hooks";
-import { EmptyState, HeaderShell, ScoreBadge } from "@/app/components/ui";
+import { useCategory, useCategoryCities, useRankedCategory } from "@/lib/hooks";
+import { Chip, EmptyState, HeaderShell, ScoreBadge } from "@/app/components/ui";
 import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
 
@@ -42,6 +42,8 @@ function CategoryDetailInner() {
   const [leaving, setLeaving] = useState(false);
 
   const tab: "ranked" | "want" = searchParams.get("tab") === "want" ? "want" : "ranked";
+  const cityFilter = searchParams.get("city");
+  const cities = useCategoryCities(id);
 
   // Shared by the tab switch here and the city filter in Task 6. Uses replace (not push)
   // so switching a tab or a filter chip never grows the history stack.
@@ -77,8 +79,12 @@ function CategoryDetailInner() {
     );
   }
 
-  const ranked = rankedData?.ranked;
-  const wantToTry = rankedData?.wantToTry;
+  const ranked = rankedData?.ranked.filter(
+    (entry) => !cityFilter || entry.place.city === cityFilter
+  );
+  const wantToTry = rankedData?.wantToTry.filter(
+    (place) => !cityFilter || place.city === cityFilter
+  );
   const headerTitle = category.emoji ? `${category.emoji} ${category.name}` : category.name;
 
   return (
@@ -106,13 +112,43 @@ function CategoryDetailInner() {
         </TabButton>
       </div>
 
+      {cities && cities.length > 0 ? (
+        // No "-mx-4 / px-4 bleed" trick here (unlike PlaceFilters' ChipRow): this row is a
+        // direct top-level child of the page fragment, not nested inside a padded parent
+        // for a negative margin to cancel out. Plain px-4 matches the tab row and both
+        // sections above/below it, which are laid out the same way.
+        <div
+          role="group"
+          aria-label="Filter by city"
+          className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <Chip active={!cityFilter} onClick={() => updateParam("city", null)} className="whitespace-nowrap">
+            All cities
+          </Chip>
+          {cities.map((city) => (
+            <Chip
+              key={city}
+              active={cityFilter === city}
+              onClick={() => updateParam("city", cityFilter === city ? null : city)}
+              className="whitespace-nowrap"
+            >
+              {city}
+            </Chip>
+          ))}
+        </div>
+      ) : null}
+
       <section className="px-4 py-4">
         {tab === "ranked" ? (
           ranked === undefined ? null : ranked.length === 0 ? (
             <EmptyState
               emoji="🍽️"
-              title="Nothing ranked yet"
-              hint="Rate a place you've been to see it climb the list."
+              title={cityFilter ? "No matches" : "Nothing ranked yet"}
+              hint={
+                cityFilter
+                  ? "No ranked places in this city yet."
+                  : "Rate a place you've been to see it climb the list."
+              }
             />
           ) : (
             <ul className="flex flex-col">
@@ -143,8 +179,12 @@ function CategoryDetailInner() {
         ) : wantToTry === undefined ? null : wantToTry.length === 0 ? (
           <EmptyState
             emoji="📝"
-            title="Nothing on the wishlist"
-            hint="Places you want to try in this list will show up here."
+            title={cityFilter ? "No matches" : "Nothing on the wishlist"}
+            hint={
+              cityFilter
+                ? "No wishlist places in this city yet."
+                : "Places you want to try in this list will show up here."
+            }
           />
         ) : (
           <ul className="flex flex-col">
