@@ -66,7 +66,7 @@ export default function WeightsEditor({
           type="button"
           onClick={handleSave}
           disabled={saving || !criteria || criteria.length === 0}
-          className="flex min-h-11 w-full items-center justify-center rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -79,15 +79,15 @@ export default function WeightsEditor({
           hint="Add rating criteria in Settings, then weight them here per list."
         />
       ) : (
-        <div className="flex flex-col divide-y divide-line py-1">
+        <div className="flex flex-col divide-y divide-rule py-1">
           {criteria.map((c) => {
             const value = valueFor(c.id);
             return (
               <div key={c.id} className="flex items-center justify-between gap-3 py-3.5">
                 <div className="min-w-0">
-                  <p className="truncate text-[0.95rem] font-medium text-ink">{c.name}</p>
+                  <p className="truncate text-[0.95rem] font-medium text-cream">{c.name}</p>
                   {value === 0 ? (
-                    <p className="text-xs text-ink-soft">Excluded from score</p>
+                    <p className="text-xs text-sage">Excluded from score</p>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -96,11 +96,11 @@ export default function WeightsEditor({
                     aria-label={`Decrease ${c.name} weight`}
                     onClick={() => bump(c.id, -1)}
                     disabled={value <= 0}
-                    className="grid h-11 w-11 place-items-center rounded-full text-lg font-semibold text-plum transition active:scale-90 active:bg-surface-sunk disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-90 active:bg-ground-deep disabled:opacity-30"
                   >
                     −
                   </button>
-                  <span className="tabular w-6 text-center text-base font-semibold text-ink">
+                  <span className="tabular w-6 text-center text-base font-semibold text-cream">
                     {value}
                   </span>
                   <button
@@ -108,7 +108,7 @@ export default function WeightsEditor({
                     aria-label={`Increase ${c.name} weight`}
                     onClick={() => bump(c.id, 1)}
                     disabled={value >= 5}
-                    className="grid h-11 w-11 place-items-center rounded-full text-lg font-semibold text-plum transition active:scale-90 active:bg-surface-sunk disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-90 active:bg-ground-deep disabled:opacity-30"
                   >
                     +
                   </button>
