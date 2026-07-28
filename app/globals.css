@@ -1,49 +1,58 @@
 @import "tailwindcss";
 
-/* ─── savor · "Cellar" theme ──────────────────────────────────────────────
-   A personal tasting ledger, not a utility tracker. Deep wine-plum is the
-   structural brand color (nav, headers, active state); ember and gold are the
-   appetite accents; everything sits on a clay-parchment base. Deliberately
-   distinct from the sibling app's cream/pine/terracotta and from default gray.
-   -------------------------------------------------------------------------- */
 @theme {
-  /* Surfaces — warm clay parchment, not cream. */
-  --color-shell: #f6ede3; /* app background */
-  --color-surface: #fffaf4; /* raised cards */
-  --color-surface-sunk: #efe3d5; /* wells / insets */
-  --color-line: #e6d8c7; /* hairlines on parchment */
+  /* ─── savor · "Supper Club" ───────────────────────────────────────────────
+     Restaurant ephemera — matchbooks, place cards, awnings — rather than menus
+     and parchment. Bottle green ground, cream ink, butter-gold seals.
 
-  /* Ink — a wine-black, warmer than neutral gray. */
-  --color-ink: #2a1a1e;
-  --color-ink-soft: #6f545a; /* secondary text */
+     Two rules carry the whole system:
 
-  /* Plum — brand / structure / active. The signature hue. */
-  --color-plum: #7a2e43;
-  --color-plum-deep: #5e2234; /* pressed */
-  --color-plum-tint: #f1e2e4; /* plum wash */
+     1. GOLD IS YES, CORAL IS CAREFUL. Gold means primary action, active state
+        and score seals. Coral means destructive and error, and nothing else.
+     2. CONTRAST IS A PROPERTY OF THE PAIR, NOT THE TOKEN. Measured:
 
-  /* Ember — energy / primary action / rating fill. */
-  --color-ember: #d2551c;
-  --color-ember-deep: #b5470f; /* pressed */
-  --color-ember-tint: #fbe6d4;
+          text        on ground   on ground-deep   on raised
+          cream       pass        pass             7.67:1 pass
+          sage        5.23:1      6.45:1           3.85:1 FAIL
+          sage-deep   FAIL        FAIL             FAIL
 
-  /* Gold — the score seal / quality mark. */
-  --color-gold: #9c6f18;
-  --color-gold-tint: #f5e9cf;
+        So `sage` is text-legal on ground and ground-deep only; secondary text on
+        `raised` must be cream. `sage-deep` is NON-TEXT only — rules, dividers,
+        inactive glyph strokes. With an opacity modifier, compute the
+        alpha-composited ratio: cream/60 on raised is 3.86:1 and fails; cream/80
+        is 5.55:1 and passes.
+     -------------------------------------------------------------------------- */
+  --color-ground: #0f3b2e; /* app background */
+  --color-ground-deep: #0a2a20; /* nav, recessed wells */
+  --color-raised: #17513f; /* raised surfaces: sheets, inputs */
+  --color-rule: #21503f; /* hairlines between rows */
+  --color-rule-strong: #2a5a49; /* section dividers */
 
-  /* Chili — destructive / error. */
-  --color-chili: #be3227;
+  --color-cream: #f2ead8; /* primary text; inverted card surface */
+  --color-sage: #8fafa0; /* secondary text — the MINIMUM for any text (~5.2:1) */
+  --color-sage-deep: #6e8c7e; /* NON-TEXT only (~3.4:1): rules, inactive strokes */
 
-  /* Type — Instrument Serif (menu display) + Hanken Grotesk (humanist body). */
-  --font-display: var(--font-instrument), ui-serif, Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-gold: #efc152; /* primary action, active state, score seals */
+  --color-gold-deep: #c99b2e; /* pressed gold */
+
+  /* Coral — destructive and error ONLY.
+     `coral` is a SIGNAL colour: borders, dots, and text on `ground-deep` (5.02:1).
+     It is NOT text-legal on `raised` (3.00:1). For a destructive button FILL use
+     `coral-deep`, which clears 4.5:1 against `text-ground`; plain `coral` as a fill
+     only reaches 4.06:1, and these are the highest-stakes labels in the app. */
+  --color-coral: #ff5c3c;
+  --color-coral-deep: #e8431f; /* destructive button fill */
+
+  /* Type — Bodoni Moda (display) + Hanken Grotesk (humanist body) + Archivo (utility). */
+  --font-display: var(--font-bodoni), ui-serif, Georgia, serif;
   --font-body: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-util: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 1rem;
+  --radius-sm: 4px; /* cards, chips, inputs, sheets — the ONLY non-zero radius */
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -52,8 +61,8 @@ body {
 }
 
 body {
-  background-color: var(--color-shell);
-  color: var(--color-ink);
+  background-color: var(--color-ground);
+  color: var(--color-cream);
   font-family: var(--font-body);
   /* Respect iOS safe areas so fixed chrome clears the home indicator. */
   padding-bottom: env(safe-area-inset-bottom);
@@ -66,7 +75,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-plum);
+  outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
 

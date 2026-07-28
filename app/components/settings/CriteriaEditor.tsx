@@ -42,7 +42,7 @@ export default function CriteriaEditor() {
         updateCriterion(neighbor.id, { sortOrder: current.sortOrder }),
       ]);
     } catch {
-      toast("Couldn't reorder — try again");
+      toast("Couldn't reorder — try again", true);
     } finally {
       setReordering(false);
     }
@@ -51,9 +51,9 @@ export default function CriteriaEditor() {
   return (
     <div className="flex flex-col gap-2">
       {criteria === undefined ? (
-        <p className="px-1 text-sm text-ink-soft">Loading…</p>
+        <p className="px-1 text-sm text-sage">Loading…</p>
       ) : criteria.length === 0 ? (
-        <p className="rounded-xl bg-surface-sunk px-3.5 py-3 text-sm text-ink-soft">
+        <p className="rounded-sm bg-ground-deep px-3.5 py-3 text-sm text-sage">
           No rating criteria yet — add one below.
         </p>
       ) : (
@@ -148,7 +148,7 @@ function CriterionRow({
   }
 
   return (
-    <div className="rounded-card border border-line bg-surface px-3 py-2.5 shadow-sm">
+    <div className="rounded-sm border border-rule bg-raised px-3 py-2.5 shadow-sm">
       <div className="flex items-center gap-1.5">
         {/* Side-by-side (not stacked) so each reorder button keeps a full 44px touch target
             without ballooning the row's height. */}
@@ -158,7 +158,7 @@ function CriterionRow({
             onClick={() => onMove(criterion.id, "up")}
             disabled={!canMoveUp || reordering}
             aria-label={`Move ${criterion.name} up`}
-            className="grid h-11 w-11 place-items-center rounded-full text-ink-soft transition active:scale-90 active:bg-surface-sunk disabled:opacity-25"
+            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-90 active:bg-ground-deep disabled:opacity-25"
           >
             <ChevronGlyph direction="up" />
           </button>
@@ -167,7 +167,7 @@ function CriterionRow({
             onClick={() => onMove(criterion.id, "down")}
             disabled={!canMoveDown || reordering}
             aria-label={`Move ${criterion.name} down`}
-            className="grid h-11 w-11 place-items-center rounded-full text-ink-soft transition active:scale-90 active:bg-surface-sunk disabled:opacity-25"
+            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-90 active:bg-ground-deep disabled:opacity-25"
           >
             <ChevronGlyph direction="down" />
           </button>
@@ -182,13 +182,13 @@ function CriterionRow({
               onBlur={commit}
               onKeyDown={handleKeyDown}
               aria-label={`Rename ${criterion.name}`}
-              className="min-h-11 w-full rounded-xl border border-plum bg-surface px-3 py-2 text-base text-ink outline-none"
+              className="min-h-11 w-full rounded-sm border border-gold bg-raised px-3 py-2 text-base text-cream outline-none"
             />
           ) : (
             <button
               type="button"
               onClick={startEditing}
-              className="min-h-11 w-full truncate rounded-xl px-3 py-2 text-left text-base text-ink transition active:bg-surface-sunk"
+              className="min-h-11 w-full truncate rounded-sm px-3 py-2 text-left text-base text-cream transition active:bg-ground-deep"
             >
               {criterion.name}
             </button>
@@ -200,15 +200,15 @@ function CriterionRow({
           onClick={() => setConfirmingDelete(true)}
           disabled={busy}
           aria-label={`Delete ${criterion.name}`}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-soft transition active:scale-90 active:bg-surface-sunk disabled:opacity-40"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-sm text-sage transition active:scale-90 active:bg-ground-deep disabled:opacity-40"
         >
           <TrashGlyph className="h-4 w-4" />
         </button>
       </div>
 
       {confirmingDelete ? (
-        <div className="mt-2.5 flex flex-col gap-3 rounded-xl bg-chili/10 p-3.5">
-          <p className="text-sm text-ink">
+        <div className="mt-2.5 flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
+          <p className="text-sm text-cream">
             Delete “{criterion.name}”? Existing scores for this criterion will stop counting
             toward rankings.
           </p>
@@ -217,7 +217,7 @@ function CriterionRow({
               type="button"
               onClick={() => setConfirmingDelete(false)}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-full border border-line px-4 text-sm font-semibold text-ink-soft transition active:scale-95 active:bg-surface-sunk disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
             >
               Cancel
             </button>
@@ -225,7 +225,7 @@ function CriterionRow({
               type="button"
               onClick={handleDelete}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-full bg-chili px-4 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
             >
               {busy ? "Deleting…" : "Delete"}
             </button>
@@ -276,12 +276,12 @@ function AddCriterionRow({ existing }: { existing: Criterion[] }) {
         onChange={(e) => setName(e.target.value)}
         placeholder="Add a criterion…"
         aria-label="New criterion name"
-        className="min-h-11 flex-1 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink outline-none focus-visible:border-plum"
+        className="min-h-11 flex-1 rounded-sm border border-rule bg-raised px-3.5 py-2.5 text-base text-cream outline-none focus-visible:border-gold"
       />
       <button
         type="submit"
         disabled={adding}
-        className="min-h-11 shrink-0 rounded-full bg-plum px-4 text-sm font-semibold text-white transition active:scale-95 active:bg-plum-deep disabled:opacity-50"
+        className="min-h-11 shrink-0 rounded-sm bg-gold px-4 text-sm font-semibold text-ground transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
       >
         Add
       </button>

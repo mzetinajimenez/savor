@@ -84,7 +84,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
       toast("Logged");
       onClose();
     } catch {
-      toast("Couldn't save that visit");
+      toast("Couldn't save that visit", true);
       setSaving(false);
     }
   }
@@ -98,7 +98,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
           type="submit"
           form="visit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-full bg-ember px-5 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-[0.98] active:bg-ember-deep disabled:opacity-40 disabled:active:scale-100"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.98] active:bg-gold-deep disabled:opacity-40 disabled:active:scale-100"
         >
           {saving ? "Saving…" : "Save visit"}
         </button>
@@ -106,17 +106,17 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
     >
       <form id="visit-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>
-          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-ink-soft">
+          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-cream">
             Place
           </p>
           {placeId ? (
-            <p className="rounded-xl bg-surface-sunk px-3.5 py-2.5 text-[0.95rem] font-medium text-ink">
+            <p className="rounded-sm bg-ground-deep px-3.5 py-2.5 text-[0.95rem] font-medium text-cream">
               {fixedPlace?.name ?? "…"}
             </p>
           ) : places === undefined ? (
-            <p className="px-0.5 text-sm text-ink-soft">Loading places…</p>
+            <p className="px-0.5 text-sm text-cream">Loading places…</p>
           ) : places.length === 0 ? (
-            <p className="rounded-xl bg-surface-sunk px-3.5 py-2.5 text-sm text-ink-soft">
+            <p className="rounded-sm bg-ground-deep px-3.5 py-2.5 text-sm text-cream">
               Add a place first with ＋
             </p>
           ) : (
@@ -127,15 +127,15 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search your places…"
                 aria-label="Search places"
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+                className="w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:ring-2 focus-visible:ring-gold"
               />
               <div
                 role="radiogroup"
                 aria-label="Select a place"
-                className="mt-2 flex max-h-48 flex-col gap-1 overflow-y-auto rounded-xl border border-line bg-surface p-1.5"
+                className="mt-2 flex max-h-48 flex-col gap-1 overflow-y-auto rounded-sm border border-sage-deep bg-ground-deep p-1.5"
               >
                 {filteredPlaces && filteredPlaces.length === 0 ? (
-                  <p className="px-2.5 py-2 text-sm text-ink-soft">
+                  <p className="px-2.5 py-2 text-sm text-cream">
                     No places match &ldquo;{search}&rdquo;.
                   </p>
                 ) : (
@@ -148,10 +148,10 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
                         role="radio"
                         aria-checked={selected}
                         onClick={() => setSelectedPlaceId(p.id)}
-                        className={`min-h-11 rounded-lg px-3 py-2 text-left text-[0.95rem] transition active:scale-[0.99] ${
+                        className={`min-h-11 rounded-sm px-3 py-2 text-left text-[0.95rem] transition active:scale-[0.99] ${
                           selected
-                            ? "bg-plum-tint font-medium text-plum"
-                            : "text-ink active:bg-surface-sunk"
+                            ? "bg-raised font-medium text-gold"
+                            : "text-cream active:bg-ground-deep"
                         }`}
                       >
                         {p.name}
@@ -171,7 +171,11 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             value={date}
             max={todayStr()}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink focus-visible:outline-2 focus-visible:outline-plum"
+            // color-scheme:dark tells the browser to theme the control's OWN chrome — the
+            // calendar glyph, the picker panel, the spin controls. Without it the platform
+            // draws light-scheme internals (dark glyph on a dark field), which is illegible
+            // against the bottle-green ground and invisible in code review.
+            className="w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream [color-scheme:dark] focus-visible:ring-2 focus-visible:ring-gold"
           />
         </Field>
 
@@ -182,7 +186,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             value={dishes}
             onChange={(e) => setDishes(e.target.value)}
             placeholder="What did you eat?"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+            className="w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:ring-2 focus-visible:ring-gold"
           />
         </Field>
 
@@ -193,7 +197,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="How was it?"
-            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/70 focus-visible:outline-2 focus-visible:outline-plum"
+            className="w-full resize-none rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:ring-2 focus-visible:ring-gold"
           />
         </Field>
       </form>
@@ -216,7 +220,7 @@ function Field({
     <div>
       <label
         htmlFor={htmlFor}
-        className="mb-1.5 block text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-ink-soft"
+        className="mb-1.5 block text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-cream"
       >
         {label}
         {optional ? <span className="normal-case tracking-normal"> (optional)</span> : null}

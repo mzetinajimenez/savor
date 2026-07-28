@@ -1,18 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, Instrument_Serif } from "next/font/google";
+import { Archivo, Bodoni_Moda, Hanken_Grotesk } from "next/font/google";
 import AppInit from "./components/AppInit";
 import BottomNav from "./components/BottomNav";
 import { AddPlaceHost } from "./components/places/PlaceForm";
 import { Toaster } from "./components/Toast";
 import "./globals.css";
 
-// Type pairing for savor's "Cellar" look: Instrument Serif for menu-style display, Hanken
-// Grotesk for warm, legible body/UI. Both wired as CSS variables consumed by @theme.
-const instrument = Instrument_Serif({
+// Type pairing for savor's "Supper Club" look: Bodoni Moda (a high-contrast didone) for
+// display and place names, Hanken Grotesk for body, Archivo for uppercase utility labels.
+// Weights are subset to exactly what the type scale uses.
+const bodoni = Bodoni_Moda({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "600"],
   style: ["normal", "italic"],
-  variable: "--font-instrument",
+  variable: "--font-bodoni",
+  display: "swap",
+});
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -38,14 +46,14 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "savor",
   },
 };
 
 export const viewport: Viewport = {
-  // Cellar clay-parchment shell (--color-shell) so the browser chrome blends into the app.
-  themeColor: "#f6ede3",
+  // Supper Club bottle-green ground (--color-ground) so the browser chrome blends into the app.
+  themeColor: "#0f3b2e",
   width: "device-width",
   initialScale: 1,
   // Pinch-zoom deliberately left enabled (no maximumScale / userScalable) — WCAG 1.4.4.
@@ -59,12 +67,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${instrument.variable} ${hanken.variable}`}>
+    <html lang="en" className={`${bodoni.variable} ${hanken.variable} ${archivo.variable}`}>
       <body className="min-h-dvh antialiased">
         {/* Single-mount data touchpoint: seeds the DB + requests persistent storage. */}
         <AppInit />
         {/* Content clears the fixed bottom nav (nav + FAB overhang + safe area). */}
-        <main className="mx-auto w-full max-w-xl pb-[calc(6rem+env(safe-area-inset-bottom))]">
+        {/* Clears the fixed nav AND the FAB, which overhangs ~1.75rem above the bar —
+            6rem cleared the bar alone and let the FAB sit on top of trailing content. */}
+        <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))]">
           {children}
         </main>
         <BottomNav />

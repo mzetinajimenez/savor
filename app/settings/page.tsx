@@ -23,31 +23,33 @@ export default function SettingsPage() {
       <HeaderShell title="Settings" />
 
       <section className="px-4 pt-4">
-        <h2 className="font-display text-xl text-plum">Rating criteria</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Rating criteria</h2>
         <div className="mt-3">
           <CriteriaEditor />
         </div>
       </section>
 
       <section className="px-4 py-6">
-        <h2 className="font-display text-xl text-plum">Storage</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Storage</h2>
         <div className="mt-3">
           <StoragePanel />
         </div>
       </section>
 
       <section className="px-4 py-6">
-        <h2 className="font-display text-xl text-plum">Backup</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Backup</h2>
         <div className="mt-3">
           <BackupPanel />
         </div>
       </section>
 
       <section className="px-4 pb-8">
-        <h2 className="font-display text-xl text-plum">About</h2>
-        <div className="mt-3 rounded-card border border-line bg-surface px-4 py-3.5 shadow-sm">
-          <p className="font-display text-lg text-ink">savor v1</p>
-          <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">About</h2>
+        <div className="mt-3 rounded-sm border border-rule bg-raised px-4 py-3.5 shadow-sm">
+          <p className="font-display text-lg text-cream">savor v1</p>
+          {/* text-cream, not text-sage: this card sits on bg-raised, where sage measures
+              3.85:1 and fails AA (see WAVE-CONSTRAINTS.md's contrast table). */}
+          <p className="mt-1 text-sm leading-relaxed text-cream">
             A personal tasting ledger for the places you&rsquo;ve been and the ones
             you&rsquo;re dying to try.
           </p>
@@ -96,30 +98,30 @@ function StoragePanel() {
       toast(granted ? "Protected against eviction" : "Browser declined to protect storage");
       await refresh();
     } catch {
-      toast("Couldn't request persistent storage");
+      toast("Couldn't request persistent storage", true);
     } finally {
       setRequesting(false);
     }
   }
 
   if (state.status === "loading") {
-    return <p className="px-1 text-sm text-ink-soft">Checking storage…</p>;
+    return <p className="px-1 text-sm text-sage">Checking storage…</p>;
   }
 
   if (state.status === "unavailable") {
     return (
-      <p className="rounded-xl bg-surface-sunk px-3.5 py-3 text-sm text-ink-soft">
+      <p className="rounded-sm bg-ground-deep px-3.5 py-3 text-sm text-sage">
         Storage info unavailable on this browser.
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-card border border-line bg-surface px-4 py-3.5 shadow-sm">
-      <p className="text-sm text-ink">
+    <div className="flex flex-col gap-2 rounded-sm border border-rule bg-raised px-4 py-3.5 shadow-sm">
+      <p className="text-sm text-cream">
         {state.usageLabel ? `~${state.usageLabel} used` : "Usage unknown"}
       </p>
-      <p className="text-sm text-ink-soft">
+      <p className="text-sm text-sage">
         {state.persisted ? "Protected against eviction" : "Not yet protected"}
       </p>
       {!state.persisted ? (
@@ -127,7 +129,7 @@ function StoragePanel() {
           type="button"
           onClick={handlePersist}
           disabled={requesting}
-          className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-full bg-plum px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep disabled:opacity-50"
+          className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-sm bg-gold px-5 py-2.5 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
         >
           {requesting ? "Requesting…" : "Protect my data"}
         </button>

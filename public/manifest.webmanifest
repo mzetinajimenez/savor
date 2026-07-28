@@ -4,8 +4,8 @@
   "description": "Track restaurants and food experiences: places you've been, a want-to-try list, and rankings you define.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6ede3",
-  "theme_color": "#f6ede3",
+  "background_color": "#0f3b2e",
+  "theme_color": "#0f3b2e",
   "icons": [
     {
       "src": "/icon-192.png",

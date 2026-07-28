@@ -37,6 +37,23 @@ import { toast } from "../Toast";
 import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
 import LookupCombobox from "./LookupCombobox";
 
+// Every text input, textarea and select in this form shares this exact treatment — see
+// WAVE-CONSTRAINTS.md's "standard input treatment." text-base is mandatory: it's what stops
+// iOS from focus-zooming the viewport when a field is tapped.
+const INPUT_CLASS =
+  "w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+
+// Every field label (and section pseudo-label: Status / Lists / Ratings) shares this exact
+// treatment too. These labels sit directly on the sheet's own bg-raised body (Sheet.tsx has no
+// intermediate surface), where text-sage measures 3.85:1 and fails AA — so text-cream, not
+// text-sage, is the correct pairing here.
+const LABEL_CLASS =
+  "mb-1.5 block font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream";
+
+// Secondary "(optional)" annotations inline in a label: text-cream/80 measures 5.55:1 on
+// bg-raised (passes); text-cream/60 measures 3.86:1 (fails) — so /80 is the floor here.
+const OPTIONAL_CLASS = "font-normal text-cream/80";
+
 function emptyForm(initial?: PlacePrefill) {
   return {
     name: initial?.name ?? "",
@@ -218,7 +235,7 @@ function AddPlaceSheet({
       toast(`Added ${trimmedName}`);
       onClose();
     } catch {
-      toast("Couldn't save that place — try again");
+      toast("Couldn't save that place — try again", true);
       setSaving(false);
     }
   }
@@ -232,7 +249,7 @@ function AddPlaceSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 flex-1 rounded-full border border-line px-5 py-3 text-[0.95rem] font-semibold text-ink-soft transition active:scale-95 active:bg-surface-sunk"
+            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
           >
             Cancel
           </button>
@@ -240,7 +257,7 @@ function AddPlaceSheet({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="min-h-11 flex-1 rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
+            className="min-h-11 flex-1 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -250,7 +267,7 @@ function AddPlaceSheet({
       <div className="flex flex-col gap-5">
         {form.sourceUrl ? (
           <div className="flex items-center justify-between gap-3">
-            <p role="status" className="text-sm font-semibold text-plum">
+            <p role="status" className="text-sm font-semibold text-gold">
               {form.sourcePlatform === "instagram"
                 ? "Imported from Instagram"
                 : form.sourcePlatform === "tiktok"
@@ -262,7 +279,7 @@ function AddPlaceSheet({
               onClick={() =>
                 setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
               }
-              className="min-h-11 shrink-0 text-sm font-semibold text-chili transition active:opacity-70"
+              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
             >
               Remove
             </button>
@@ -287,7 +304,7 @@ function AddPlaceSheet({
               <button
                 type="button"
                 onClick={() => setPasteOpen(true)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule"
               >
                 Paste a link
               </button>
@@ -296,27 +313,68 @@ function AddPlaceSheet({
         ) : null}
 
         <div>
-          {/* Name + live OSM lookup. The combobox owns both; see LookupCombobox.tsx. */}
-          <LookupCombobox
+          <label htmlFor="place-name" className={LABEL_CLASS}>
+            Name
+          </label>
+          <input
+            id="place-name"
+            type="text"
             value={form.name}
-            onChange={handleNameChange}
-            onSelect={handleSelectResult}
-            autoLookup={Boolean(initial?.autoLookup && initial.name)}
-            searchNonce={searchNonce}
+            onChange={(e) => {
+              const name = e.target.value;
+              setForm((f) => ({ ...f, name }));
+              // Editing the name invalidates any prior lookup — a stale result list (or "nothing
+              // found" hint) shouldn't linger and look like it applies to the new text.
+              setLookupResults([]);
+              setSearched(false);
+            }}
+            placeholder="Taco Spot"
+            autoComplete="off"
+            className={INPUT_CLASS}
           />
-          {/* The only visible signal that a suggestion's lat/lng/osmId are attached —
-              and why editing the name after selecting one is a legible action (the pin
-              disappears) rather than a silent trap. See handleNameChange above. */}
-          {form.lat !== undefined || form.osmId !== undefined ? (
-            <p className="mt-1.5 text-xs text-ink-soft">
-              📍 {[form.address, form.city].filter(Boolean).join(" · ")}
-            </p>
+
+          {trimmedName ? (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={handleLookup}
+                disabled={lookupLoading}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule disabled:opacity-60"
+              >
+                {lookupLoading ? "Looking up…" : "Look up"}
+              </button>
+            </div>
+          ) : null}
+
+          {lookupResults.length > 0 ? (
+            <ul className="mt-2 flex flex-col">
+              {lookupResults.map((result, i) => (
+                <li key={`${result.lat}-${result.lng}-${i}`} className="border-t border-rule">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectResult(result)}
+                    className="min-h-11 w-full px-1 py-2.5 text-left transition active:bg-ground-deep"
+                  >
+                    <p className="text-sm font-semibold leading-snug text-cream">{result.name}</p>
+                    {result.address || result.city ? (
+                      <p className="text-xs leading-snug text-cream/80">
+                        {result.address ?? result.city}
+                      </p>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {searched && !lookupLoading && lookupResults.length === 0 ? (
+            <p className="mt-2 text-sm text-cream/80">Nothing found — add manually.</p>
           ) : null}
         </div>
 
         {/* Status */}
         <div>
-          <p className="mb-1.5 text-sm font-semibold text-ink-soft">Status</p>
+          <p className={LABEL_CLASS}>Status</p>
           <div className="flex gap-2">
             <Chip
               active={form.status === "been"}
@@ -335,8 +393,8 @@ function AddPlaceSheet({
 
         {/* Cuisine (optional) */}
         <div>
-          <label htmlFor="place-cuisine" className="mb-1 block text-sm font-semibold text-ink-soft">
-            Cuisine <span className="font-normal text-ink-soft/70">(optional)</span>
+          <label htmlFor="place-cuisine" className={LABEL_CLASS}>
+            Cuisine <span className={OPTIONAL_CLASS}>(optional)</span>
           </label>
           <input
             id="place-cuisine"
@@ -344,14 +402,14 @@ function AddPlaceSheet({
             value={form.cuisine}
             onChange={(e) => setForm((f) => ({ ...f, cuisine: e.target.value }))}
             placeholder="Mexican, ramen, pizza…"
-            className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+            className={INPUT_CLASS}
           />
         </div>
 
         {/* Notes (optional) */}
         <div>
-          <label htmlFor="place-notes" className="mb-1 block text-sm font-semibold text-ink-soft">
-            Notes <span className="font-normal text-ink-soft/70">(optional)</span>
+          <label htmlFor="place-notes" className={LABEL_CLASS}>
+            Notes <span className={OPTIONAL_CLASS}>(optional)</span>
           </label>
           <textarea
             id="place-notes"
@@ -359,14 +417,14 @@ function AddPlaceSheet({
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             placeholder="What to order, the vibe, anything worth remembering…"
             rows={3}
-            className="w-full resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+            className={`resize-none ${INPUT_CLASS}`}
           />
         </div>
 
         {/* Category checkboxes */}
         {categories && categories.length > 0 ? (
           <div>
-            <p className="mb-1.5 text-sm font-semibold text-ink-soft">Lists</p>
+            <p className={LABEL_CLASS}>Lists</p>
             <div className="flex flex-wrap gap-2">
               {categories.map((c) => (
                 <Chip
@@ -385,13 +443,13 @@ function AddPlaceSheet({
         {/* Ratings — only when status is "been"; every row is skippable. */}
         {form.status === "been" && criteria && criteria.length > 0 ? (
           <div>
-            <p className="mb-1.5 text-sm font-semibold text-ink-soft">
-              Ratings <span className="font-normal text-ink-soft/70">(optional — skip any)</span>
+            <p className={LABEL_CLASS}>
+              Ratings <span className={OPTIONAL_CLASS}>(optional — skip any)</span>
             </p>
             <div className="flex flex-col gap-3">
               {criteria.map((c) => (
                 <div key={c.id} className="flex items-center justify-between gap-3">
-                  <span className="text-[0.95rem] text-ink">{c.name}</span>
+                  <span className="text-[0.95rem] text-cream">{c.name}</span>
                   <RatingRow
                     label={c.name}
                     value={form.ratings[c.id]}

@@ -1,14 +1,14 @@
 // savor PWA icon generator — no external deps.
 //
-// Renders the "Cellar" app mark: a wine-plum field carrying a gold tasting seal (the score-
-// badge motif) around a single ember tasting bead (the rating motif). The two brand gestures
-// — gold quality seal + ember bead — stacked into one medallion. Anti-aliased via 4x4
+// Renders the "Supper Club" app mark: a bottle-green field carrying a gold tasting seal (the
+// score-badge motif) around a single cream tasting bead (the rating motif). The two brand
+// gestures — gold quality seal + cream bead — stacked into one medallion. Anti-aliased via 4x4
 // supersampling; encoded to PNG by hand using Node's built-in zlib (no canvas/sharp).
 //
 // Run:  node scripts/generate-icons.mjs
 // Emits: public/icon-192.png, icon-512.png, icon-maskable-512.png, apple-touch-icon.png
 //
-// The mark is full-bleed (plum to every edge) with all content inside the central ~62% —
+// The mark is full-bleed (bottle green to every edge) with all content inside the central ~62% —
 // well within a maskable icon's 80% safe zone, so the same render serves "any" and
 // "maskable" purposes and looks correct under iOS's rounded mask.
 
@@ -20,14 +20,14 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolve(__dirname, "..", "public");
 
-// ── Cellar palette (RGB) ────────────────────────────────────────────────────
-const PLUM = [122, 46, 67]; // --color-plum      #7a2e43
-const PLUM_DEEP = [94, 34, 52]; // --color-plum-deep #5e2234 (edge vignette)
-const GOLD = [156, 111, 24]; // --color-gold      #9c6f18
-const GOLD_HI = [201, 160, 66]; // lifted gold for the seal's top face
-const EMBER = [210, 85, 28]; // --color-ember     #d2551c
-const EMBER_DEEP = [181, 71, 15]; // --color-ember-deep #b5470f
-const GOLD_TINT = [245, 233, 207]; // --color-gold-tint #f5e9cf (bead highlight)
+// ── Supper Club palette (RGB) ───────────────────────────────────────────────
+const GROUND = [15, 59, 46]; // --color-ground      #0f3b2e
+const GROUND_DEEP = [10, 42, 32]; // --color-ground-deep #0a2a20 (edge vignette)
+const GOLD = [239, 193, 82]; // --color-gold        #efc152
+const GOLD_HI = [245, 214, 130]; // lifted gold for the seal's top face
+const CREAM = [242, 234, 216]; // --color-cream       #f2ead8 (the bead)
+const CREAM_DEEP = [214, 203, 178]; // shaded cream
+const CREAM_HI = [255, 250, 240]; // bead highlight
 
 // Geometry as fractions of the icon edge.
 const OUTER_R = 0.31; // gold seal outer radius
@@ -48,17 +48,17 @@ function sample(nx, ny) {
   const dy = ny - 0.5;
   const r = Math.hypot(dx, dy);
 
-  // Radial plum vignette across the whole field.
-  let col = mix(PLUM, PLUM_DEEP, clamp01((r - 0.15) / 0.55));
+  // Radial bottle-green vignette across the whole field.
+  let col = mix(GROUND, GROUND_DEEP, clamp01((r - 0.15) / 0.55));
 
   if (r <= OUTER_R && r >= INNER_R) {
     // Gold seal ring — brighter toward the top edge for a struck-metal read.
     col = mix(GOLD_HI, GOLD, clamp01((dy / OUTER_R + 1) / 2));
   } else if (r < BEAD_R) {
-    // Ember bead — vertical gradient, then a soft top-left highlight.
-    col = mix(EMBER, EMBER_DEEP, clamp01((dy / BEAD_R + 1) / 2));
+    // Cream bead — vertical gradient, then a soft top-left highlight.
+    col = mix(CREAM, CREAM_DEEP, clamp01((dy / BEAD_R + 1) / 2));
     const hd = Math.hypot(dx + 0.055, dy + 0.06);
-    if (hd < 0.06) col = mix(col, GOLD_TINT, 0.55 * (1 - hd / 0.06));
+    if (hd < 0.06) col = mix(col, CREAM_HI, 0.55 * (1 - hd / 0.06));
   }
 
   return col;

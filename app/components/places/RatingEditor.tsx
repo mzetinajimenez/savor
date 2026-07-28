@@ -28,7 +28,7 @@ export default function RatingEditor({
     try {
       await setRating(place.id, criterionId, value);
     } catch {
-      toast("Couldn't save that rating");
+      toast("Couldn't save that rating", true);
     }
   }
 
@@ -40,7 +40,7 @@ export default function RatingEditor({
         <button
           type="button"
           onClick={onClose}
-          className="flex min-h-11 w-full items-center justify-center rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
         >
           Done
         </button>
@@ -53,10 +53,10 @@ export default function RatingEditor({
           hint="Add rating criteria in Settings, then rate this place here."
         />
       ) : (
-        <div className="flex flex-col divide-y divide-line py-1">
+        <div className="flex flex-col divide-y divide-rule py-1">
           {criteria.map((c) => (
             <div key={c.id} className="flex items-center justify-between gap-3 py-3.5">
-              <span className="min-w-0 flex-1 truncate text-[0.95rem] text-ink">{c.name}</span>
+              <span className="min-w-0 flex-1 truncate text-[0.95rem] text-cream">{c.name}</span>
               <RatingRow
                 label={c.name}
                 value={place.ratings[c.id]}

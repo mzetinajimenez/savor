@@ -1,8 +1,8 @@
 "use client";
 
 // Presentational UI primitives for savor. No Dexie / repo imports here — these are pure
-// display + local-interaction components. The visual language ("Cellar"): clay parchment
-// surfaces, wine-plum structure, ember action, gold score seals, Instrument Serif display.
+// display + local-interaction components. The visual language ("Supper Club"): bottle green
+// surfaces, cream ink, butter-gold seals, Bodoni Moda display, Archivo utility labels.
 
 import { useId, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
@@ -29,7 +29,7 @@ export function emitAddPlace(prefill?: PlacePrefill) {
 /* ─── HeaderShell ─────────────────────────────────────────────────────────
    Sticky masthead for every tab: a letterspaced "savor" eyebrow over a serif
    section title, with an optional trailing action and an optional row below
-   (filters, search) supplied as children. Safe-area aware; parchment + blur. */
+   (filters, search) supplied as children. Safe-area aware; bottle-green scrim + blur. */
 export function HeaderShell({
   title,
   eyebrow = "savor",
@@ -42,14 +42,14 @@ export function HeaderShell({
   children?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-line/80 bg-shell/85 backdrop-blur-md">
+    <header className="sticky top-0 z-20 border-b border-rule/80 bg-ground/85 backdrop-blur-md">
       <div className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-ink-soft">
+            <p className="font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-sage">
               {eyebrow}
             </p>
-            <h1 className="mt-0.5 truncate font-display text-3xl leading-none text-plum">
+            <h1 className="mt-0.5 truncate font-display text-[2.0625rem] italic leading-[0.98] font-semibold text-gold">
               {title}
             </h1>
           </div>
@@ -62,8 +62,8 @@ export function HeaderShell({
 }
 
 /* ─── Chip ─────────────────────────────────────────────────────────────────
-   Pill for filters / tags. Interactive when `onClick` is given (ember when
-   active), otherwise a static label. */
+   A labeled tile for filters / tags — not a pill. Interactive when `onClick`
+   is given (gold when active), otherwise a static label. */
 export function Chip({
   active = false,
   onClick,
@@ -76,10 +76,10 @@ export function Chip({
   className?: string;
 }) {
   const base =
-    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition";
+    "inline-flex shrink-0 items-center gap-1.5 rounded-sm px-3.5 py-1.5 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] transition";
   const look = active
-    ? "bg-ember-deep text-white shadow-sm"
-    : "border border-line bg-surface text-ink-soft";
+    ? "bg-gold-deep text-ground shadow-sm"
+    : "border border-rule bg-ground-deep text-sage";
 
   if (!onClick) {
     return <span className={`${base} ${look} ${className}`}>{children}</span>;
@@ -89,10 +89,10 @@ export function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual pill —
+      // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual chip —
       // the extra height is invisible padding around the same compact px-3.5/py-1.5 label.
       className={`${base} ${look} min-h-11 active:scale-95 ${
-        active ? "active:opacity-90" : "active:bg-surface-sunk"
+        active ? "active:opacity-90" : "active:opacity-80"
       } ${className}`}
     >
       {children}
@@ -118,12 +118,12 @@ export function EmptyState({
     <div className="mx-auto flex max-w-sm flex-col items-center px-6 py-20 text-center">
       <span
         aria-hidden
-        className="grid h-16 w-16 place-items-center rounded-full bg-surface-sunk text-3xl ring-1 ring-line"
+        className="grid h-16 w-16 place-items-center rounded-sm bg-ground-deep text-3xl ring-1 ring-rule"
       >
         {emoji}
       </span>
-      <h2 className="mt-5 font-display text-2xl text-ink">{title}</h2>
-      <p className="mt-1.5 text-[0.95rem] leading-relaxed text-ink-soft">{hint}</p>
+      <h2 className="mt-5 font-display text-2xl text-cream">{title}</h2>
+      <p className="mt-1.5 text-[0.95rem] leading-relaxed text-sage">{hint}</p>
       {children ? <div className="mt-6">{children}</div> : null}
     </div>
   );
@@ -136,7 +136,7 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
     <button
       type="button"
       onClick={() => emitAddPlace()}
-      className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
+      className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
     >
       <PlusGlyph className="h-4 w-4" />
       {label}
@@ -149,7 +149,7 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
    like a link" hint + submit button. Shared by /import's paste screen and
    PlaceForm's inline paste affordance so the two entry points into the same
    resolve flow never drift apart. `variant` controls only the button's visual
-   weight — "primary" (default) is /import's full-page ember button; the
+   weight — "primary" (default) is /import's full-page gold button; the
    "secondary" outline style is for use inside PlaceForm's sheet, where Save
    is the true primary action. */
 export function PasteLinkField({
@@ -171,8 +171,8 @@ export function PasteLinkField({
   const canSubmit = value.trim().length > 0 && !submitting;
   const buttonClass =
     variant === "primary"
-      ? "min-h-11 w-full rounded-full bg-ember px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-ember-deep disabled:pointer-events-none disabled:opacity-40"
-      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-line bg-surface-sunk px-4 text-sm font-semibold text-plum transition active:scale-95 active:bg-line disabled:opacity-60";
+      ? "min-h-11 w-full rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule disabled:opacity-60";
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
@@ -193,10 +193,13 @@ export function PasteLinkField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Paste an Instagram or TikTok link"
-        className="h-12 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-ink-soft/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-plum"
+        className="h-12 w-full rounded-sm border border-sage-deep bg-ground-deep px-3.5 text-base text-cream placeholder:text-cream/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
       />
+      {/* Coral is the signal, cream carries the words: coral text is 3.00:1 on the bg-raised
+          sheet body this can render inside, and 4.06:1 on ground. Same border-plus-cream
+          pattern the error Toast settled on. */}
       {showHint ? (
-        <p className="text-sm text-chili">
+        <p className="border-l-2 border-coral pl-2 text-sm text-cream">
           That doesn&rsquo;t look like a link — try pasting the full URL.
         </p>
       ) : null}
@@ -208,8 +211,10 @@ export function PasteLinkField({
 }
 
 /* ─── ScoreBadge ─────────────────────────────────────────────────────────────
-   A gold enamel "seal" — the composite score stamped on a menu. Serif numeral,
-   tabular. Uses formatScore for the 1-decimal display. */
+   The score seal — a foil stamp in butter gold with dark-green ink. Fully-round
+   radius is reserved for this seal and small circular indicators (rating beads,
+   status dots) — never cards, rows, buttons, chips, or inputs. Serif numeral,
+   tabular, via formatScore. */
 export function ScoreBadge({
   score,
   size = "md",
@@ -219,17 +224,12 @@ export function ScoreBadge({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const dims =
-    size === "sm" ? "px-2 py-0.5 text-sm" : "px-2.5 py-1 text-base";
-  const star = size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5";
+  const dims = size === "sm" ? "h-8 w-8 text-[0.8rem]" : "h-10 w-10 text-[0.95rem]";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-lg bg-gold-tint text-plum ring-1 ring-gold/30 ${dims} ${className}`}
+      className={`tabular inline-grid shrink-0 place-items-center rounded-full bg-gold font-display font-bold text-ground shadow-[inset_0_0_0_1.5px_var(--color-ground),0_2px_6px_rgba(0,0,0,0.32)] ${dims} ${className}`}
     >
-      <StarGlyph className={`text-gold ${star}`} />
-      <span className="tabular font-display font-medium leading-none">
-        {formatScore(score)}
-      </span>
+      {formatScore(score)}
     </span>
   );
 }
@@ -296,7 +296,7 @@ export function RatingRow({
             aria-label={`${n} of 5`}
             tabIndex={selected || (current === 0 && n === 1) ? 0 : -1}
             onClick={() => onChange(selected ? null : n)}
-            className="grid h-11 w-11 place-items-center rounded-full transition active:scale-90"
+            className="grid h-11 w-11 place-items-center rounded-sm transition active:scale-90"
           >
             <Bead filled={n <= current} size="md" />
           </button>
@@ -313,8 +313,8 @@ function Bead({ filled, size }: { filled: boolean; size: "sm" | "md" }) {
       aria-hidden
       className={`block rounded-full ${dim} ${
         filled
-          ? "bg-ember shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
-          : "border-2 border-line bg-surface-sunk"
+          ? "bg-gold shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
+          : "border-2 border-sage bg-transparent"
       }`}
     />
   );
@@ -345,14 +345,6 @@ export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function StarGlyph({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-      <path d="M12 2.5l2.7 5.9 6.3.7-4.7 4.3 1.3 6.2L12 16.9 6.1 19.6l1.3-6.2L2.7 9.1l6.3-.7L12 2.5z" />
     </svg>
   );
 }
