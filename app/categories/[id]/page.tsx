@@ -14,7 +14,7 @@ import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-ink-soft transition active:scale-95 active:bg-surface-sunk";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule";
 
 export default function CategoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,7 +43,7 @@ export default function CategoryDetailPage() {
         >
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             Back to Lists
           </Link>
@@ -73,7 +73,9 @@ export default function CategoryDetailPage() {
       />
 
       <section className="px-4 pt-4">
-        <h2 className="font-display text-xl text-plum">Ranked</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">
+          Ranked
+        </h2>
         {ranked === undefined ? null : ranked.length === 0 ? (
           <EmptyState
             emoji="🍽️"
@@ -81,18 +83,18 @@ export default function CategoryDetailPage() {
             hint="Rate a place you've been to see it climb the list."
           />
         ) : (
-          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+          <ul className="mt-3 flex flex-col">
             {ranked.map((entry) => (
-              <li key={entry.place.id}>
+              <li key={entry.place.id} className="border-t border-rule">
                 <Link
                   href={`/places/${entry.place.id}`}
-                  className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-surface-sunk"
+                  className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-ground-deep"
                 >
-                  <span className="tabular w-10 shrink-0 text-sm font-semibold text-ink-soft">
+                  <span className="tabular w-10 shrink-0 font-util text-[0.6875rem] font-semibold text-sage">
                     #{entry.rank}
                     {entry.tied ? " =" : ""}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[0.95rem] text-ink">
+                  <span className="min-w-0 flex-1 truncate text-[0.95rem] text-cream">
                     {entry.place.name}
                   </span>
                   <ScoreBadge score={entry.score} size="sm" />
@@ -104,7 +106,9 @@ export default function CategoryDetailPage() {
       </section>
 
       <section className="px-4 py-6">
-        <h2 className="font-display text-xl text-plum">Want to try</h2>
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">
+          Want to try
+        </h2>
         {wantToTry === undefined ? null : wantToTry.length === 0 ? (
           <EmptyState
             emoji="📝"
@@ -112,14 +116,20 @@ export default function CategoryDetailPage() {
             hint="Places you want to try in this list will show up here."
           />
         ) : (
-          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+          <ul className="mt-3 flex flex-col">
             {wantToTry.map((place) => (
-              <li key={place.id}>
+              <li key={place.id} className="border-t border-rule">
                 <Link
                   href={`/places/${place.id}`}
-                  className="flex min-h-11 items-center px-4 py-3.5 transition active:bg-surface-sunk"
+                  className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-ground-deep"
                 >
-                  <span className="min-w-0 flex-1 truncate text-[0.95rem] text-ink">
+                  <span className="flex w-10 shrink-0 items-center">
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 rounded-full border border-cream"
+                    />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[0.95rem] text-cream">
                     {place.name}
                   </span>
                 </Link>

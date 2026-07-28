@@ -35,7 +35,7 @@ export default function CategoriesPage() {
           <button
             type="button"
             onClick={() => setFormOpen(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-plum px-4 py-2 text-sm font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
             New list
@@ -52,14 +52,14 @@ export default function CategoriesPage() {
           <button
             type="button"
             onClick={() => setFormOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-plum px-5 py-3 text-[0.95rem] font-semibold text-white shadow-sm transition active:scale-95 active:bg-plum-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
             New list
           </button>
         </EmptyState>
       ) : (
-        <div className="grid grid-cols-2 gap-3 px-4 py-4">
+        <ul className="flex flex-col px-4">
           {categories.map((category) => (
             <CategoryCard
               key={category.id}
@@ -68,7 +68,7 @@ export default function CategoriesPage() {
               onOpen={() => router.push(`/categories/${category.id}`)}
             />
           ))}
-        </div>
+        </ul>
       )}
 
       {formOpen ? (
@@ -92,18 +92,22 @@ function CategoryCard({
   onOpen: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex min-h-11 flex-col items-start gap-2 rounded-card border border-line bg-surface p-4 text-left shadow-sm transition active:scale-[0.98] active:bg-surface-sunk"
-    >
-      <span aria-hidden className="text-3xl">
-        {category.emoji || "🏆"}
-      </span>
-      <span className="font-display text-lg leading-tight text-ink">{category.name}</span>
-      <span className="text-xs font-medium text-ink-soft">
-        {count} {count === 1 ? "place" : "places"}
-      </span>
-    </button>
+    <li className="border-t border-rule">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-h-11 w-full items-center gap-3 py-3 text-left transition active:bg-ground-deep"
+      >
+        <span aria-hidden className="text-2xl">
+          {category.emoji || "🏆"}
+        </span>
+        <span className="min-w-0 flex-1 truncate font-display text-lg leading-tight text-cream">
+          {category.name}
+        </span>
+        <span className="shrink-0 text-[0.6875rem] text-sage">
+          {count} {count === 1 ? "place" : "places"}
+        </span>
+      </button>
+    </li>
   );
 }
