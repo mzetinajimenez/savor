@@ -16,11 +16,12 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useCategories, useCriteria, usePlace, useVisits } from "@/lib/hooks";
 import { compositeScore } from "@/lib/ranking";
 import { deletePlace, updatePlace } from "@/lib/repo";
-import type { Place, PlaceStatus } from "@/lib/types";
+import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
 import { Chip, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
 import RatingEditor from "@/app/components/places/RatingEditor";
+import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import VisitForm from "@/app/components/visits/VisitForm";
 
 const STATUS_LABEL: Record<PlaceStatus, string> = {
@@ -59,6 +60,7 @@ export default function PlaceDetailPage() {
   const [ratingEditorOpen, setRatingEditorOpen] = useState(false);
   const [visitFormOpen, setVisitFormOpen] = useState(false);
   const [statusPending, setStatusPending] = useState(false);
+  const [breakdownCategoryId, setBreakdownCategoryId] = useState<string | null>(null);
 
   // Belt-and-suspenders with hooks.ts's own tombstone filter (matches app/page.tsx's identical
   // pattern) rather than a correctness requirement — queryCriteria() already excludes
@@ -177,7 +179,7 @@ export default function PlaceDetailPage() {
               const score = compositeScore(place.ratings, category.weights, liveCriterionIds);
               if (score === null) return null;
               return (
-                <Chip key={categoryId}>
+                <Chip key={categoryId} onClick={() => setBreakdownCategoryId(categoryId)}>
                   <span className="mr-1">
                     {category.emoji ? `${category.emoji} ` : ""}
                     {category.name}
@@ -292,6 +294,16 @@ export default function PlaceDetailPage() {
       ) : null}
 
       <VisitForm open={visitFormOpen} onClose={() => setVisitFormOpen(false)} placeId={place.id} />
+
+      {breakdownCategoryId && categories !== undefined && criteria !== undefined ? (
+        <ScoreBreakdownSheet
+          place={currentPlace}
+          categoryId={breakdownCategoryId}
+          categories={categories}
+          criteria={criteria}
+          onClose={() => setBreakdownCategoryId(null)}
+        />
+      ) : null}
     </>
   );
 }
@@ -462,6 +474,29 @@ function PlaceEditSheet({
           )}
         </div>
       </form>
+    </Sheet>
+  );
+}
+
+function ScoreBreakdownSheet({
+  place,
+  categoryId,
+  categories,
+  criteria,
+  onClose,
+}: {
+  place: Place;
+  categoryId: string;
+  categories: Category[];
+  criteria: Criterion[];
+  onClose: () => void;
+}) {
+  const category = categories.find((c) => c.id === categoryId);
+  if (!category) return null;
+
+  return (
+    <Sheet title="Score breakdown" onClose={onClose}>
+      <ScoreBreakdown place={place} category={category} categories={categories} criteria={criteria} />
     </Sheet>
   );
 }
