@@ -148,6 +148,16 @@ path around the repo.
   needs a hard accessibility state machine, adopting a *headless* primitive for
   that one interaction is a separate decision on its own merits, and is not
   foreclosed by this.
+- **The score-breakdown long-press/hover-intent peek is an accelerator, never the only
+  path.** It is not discoverable, not keyboard-reachable, and not exposed to screen readers —
+  its container is `aria-hidden` and never receives focus. The canonical, fully-accessible route
+  to the same information is `ScoreBreakdown` mounted in a `Sheet` from place detail's score
+  chips. Any future mount of the peek elsewhere must keep this property, not just the two mounts
+  that exist today.
+- **`navigator.vibrate()` is Android-only.** Safari has never implemented the Vibration API and
+  there is no web equivalent for the Taptic Engine. Every call must be feature-guarded
+  (`typeof navigator.vibrate === "function"`); no copy or comment may imply iOS gets a haptic
+  tick from the long-press peek.
 
 ## Conventions
 
