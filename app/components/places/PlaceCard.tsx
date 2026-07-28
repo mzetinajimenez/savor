@@ -44,7 +44,10 @@ export default function PlaceCard({
           <h3 className="truncate font-display text-[1.03125rem] font-semibold leading-tight text-cream">
             {place.name}
           </h3>
-          <Chip active={place.status === "been"}>{STATUS_LABEL[place.status]}</Chip>
+          {/* Always the recessed variant: this is a passive status label, not an active
+              filter. Gold is reserved for action and active state, and a gold pill here
+              would compete with the score seal on the same row. */}
+          <Chip>{STATUS_LABEL[place.status]}</Chip>
           {place.sourceUrl ? (
             <span
               role="img"
