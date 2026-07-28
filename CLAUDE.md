@@ -56,7 +56,8 @@ sabor/
 │       │   ├── LookupCombobox.tsx#   name field + live debounced OSM suggestions (ARIA combobox)
 │       │   ├── PlaceCard.tsx     #   place list-row: name, status, ScoreBadge
 │       │   ├── PlaceFilters.tsx  #   status filter chips (All / Been / Want to try)
-│       │   └── RatingEditor.tsx  #   per-criterion 1–5 editor → repo.setRating
+│       │   ├── RatingEditor.tsx  #   per-criterion 1–5 editor → repo.setRating
+│       │   └── ScoreBreakdown.tsx#   per-criterion weight/rating/why explanation, 2 mounts
 │       ├── categories/
 │       │   ├── CategoryForm.tsx  #   add/edit list sheet
 │       │   └── WeightsEditor.tsx #   per-list criterion weights → repo.setWeights
