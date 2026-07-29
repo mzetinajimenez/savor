@@ -11,10 +11,14 @@
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState, type ReactNode } from "react";
-import { useCategory, useRankedCategory } from "@/lib/hooks";
+import { useCategories, useCategory, useCriteria, useRankedCategory } from "@/lib/hooks";
 import { Chip, EmptyState, HeaderShell, ScoreBadge } from "@/app/components/ui";
 import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
+import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
+import { useLongPress } from "@/lib/useLongPress";
+import type { RankedEntry } from "@/lib/ranking";
+import type { Category, Criterion } from "@/lib/types";
 
 const actionButtonClass =
   "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule";
@@ -37,6 +41,8 @@ function CategoryDetailInner() {
   const searchParams = useSearchParams();
   const category = useCategory(id);
   const rankedData = useRankedCategory(id);
+  const categories = useCategories();
+  const criteria = useCriteria();
   const [editOpen, setEditOpen] = useState(false);
   const [weightsOpen, setWeightsOpen] = useState(false);
   // Set the moment a delete is confirmed, before router.push("/categories") resolves. The
@@ -171,26 +177,13 @@ function CategoryDetailInner() {
           ) : (
             <ul className="flex flex-col">
               {ranked.map((entry) => (
-                <li key={entry.place.id} className="border-t border-rule">
-                  <Link
-                    href={`/places/${entry.place.id}`}
-                    className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-ground-deep"
-                  >
-                    <span className="tabular w-10 shrink-0 font-util text-[0.6875rem] font-semibold text-sage">
-                      #{entry.rank}
-                      {entry.tied ? " =" : ""}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[0.95rem] text-cream">{entry.place.name}</p>
-                      {entry.place.address ? (
-                        <p className="mt-0.5 truncate text-[0.6875rem] text-sage">
-                          {entry.place.address}
-                        </p>
-                      ) : null}
-                    </div>
-                    <ScoreBadge score={entry.score} size="sm" />
-                  </Link>
-                </li>
+                <RankedPlaceRow
+                  key={entry.place.id}
+                  entry={entry}
+                  category={category}
+                  categories={categories ?? []}
+                  criteria={criteria ?? []}
+                />
               ))}
             </ul>
           )
@@ -266,5 +259,61 @@ function TabButton({
     >
       {children}
     </button>
+  );
+}
+
+function RankedPlaceRow({
+  entry,
+  category,
+  categories,
+  criteria,
+}: {
+  entry: RankedEntry;
+  category: Category;
+  categories: Category[];
+  criteria: Criterion[];
+}) {
+  const longPress = useLongPress();
+
+  return (
+    <li className="relative border-t border-rule">
+      <Link
+        href={`/places/${entry.place.id}`}
+        className="flex min-h-11 select-none items-center gap-3 px-4 py-3.5 transition [-webkit-touch-callout:none] active:bg-ground-deep"
+        onClick={(e) => {
+          if (longPress.consumeTrigger()) e.preventDefault();
+        }}
+        {...longPress.handlers}
+      >
+        <span className="tabular w-10 shrink-0 font-util text-[0.6875rem] font-semibold text-sage">
+          #{entry.rank}
+          {entry.tied ? " =" : ""}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[0.95rem] text-cream">{entry.place.name}</p>
+          {entry.place.address ? (
+            <p className="mt-0.5 truncate text-[0.6875rem] text-sage">{entry.place.address}</p>
+          ) : null}
+        </div>
+        <ScoreBadge score={entry.score} size="sm" />
+      </Link>
+
+      {longPress.open ? (
+        // aria-hidden + pointer-events-none: the peek is an accelerator only, never the only
+        // path to this information (CLAUDE.md Product decisions) — not discoverable, not
+        // keyboard-reachable. The canonical, fully-accessible route is the same ScoreBreakdown
+        // mounted from place detail's Sheet.
+        <div aria-hidden className="pointer-events-none absolute inset-x-4 top-full z-30 -mt-1">
+          <div className="rounded-sm border border-rule bg-raised p-4 shadow-2xl">
+            <ScoreBreakdown
+              place={entry.place}
+              category={category}
+              categories={categories}
+              criteria={criteria}
+            />
+          </div>
+        </div>
+      ) : null}
+    </li>
   );
 }

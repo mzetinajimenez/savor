@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { compositeScore, formatScore, rankCategory } from "./ranking";
+import {
+  compositeScore,
+  dominantContribution,
+  explainScore,
+  formatScore,
+  rankCategory,
+  scoreAcrossCategories,
+  summarizeScore,
+} from "./ranking";
 import type { Category, Criterion, Place } from "./types";
 
 // ---- test fixtures ----
@@ -268,5 +276,194 @@ describe("rankCategory", () => {
     expect(places).toEqual(placesCopy);
     expect(cat).toEqual(catCopy);
     expect(crit).toEqual(critCopy);
+  });
+});
+
+// ---- explainScore ----
+
+describe("explainScore", () => {
+  it("includes every live criterion, rated or not, with its effective weight", () => {
+    const crit = [criterion("taste"), criterion("value")];
+    const cat = category({ weights: { taste: 3 } }); // value omitted -> defaults to weight 1
+    const p = place({ id: "a", ratings: { taste: 4 } }); // value never rated
+    const result = explainScore(p, cat, crit);
+    expect(result.contributions).toEqual([
+      { criterionId: "taste", name: "taste", weight: 3, rating: 4, included: true },
+      { criterionId: "value", name: "value", weight: 1, rating: null, included: false },
+    ]);
+  });
+
+  it("marks a criterion excluded when its weight is explicitly 0, even if rated", () => {
+    const crit = [criterion("taste"), criterion("value")];
+    const cat = category({ weights: { taste: 3, value: 0 } });
+    const p = place({ id: "a", ratings: { taste: 4, value: 5 } });
+    const result = explainScore(p, cat, crit);
+    expect(result.contributions.find((c) => c.criterionId === "value")).toEqual({
+      criterionId: "value",
+      name: "value",
+      weight: 0,
+      rating: 5,
+      included: false,
+    });
+  });
+
+  it("omits tombstoned criteria from contributions entirely", () => {
+    const crit = [
+      criterion("taste"),
+      criterion("value", { deletedAt: "2026-01-02T00:00:00.000Z" }),
+    ];
+    const cat = category({ weights: { taste: 1, value: 1 } });
+    const p = place({ id: "a", ratings: { taste: 4, value: 5 } });
+    const result = explainScore(p, cat, crit);
+    expect(result.contributions.map((c) => c.criterionId)).toEqual(["taste"]);
+  });
+
+  it("returns the same score compositeScore would, for the same inputs", () => {
+    const crit = [criterion("taste"), criterion("value")];
+    const cat = category({ weights: { taste: 3, value: 1 } });
+    const p = place({ id: "a", ratings: { taste: 4, value: 2 } });
+    const result = explainScore(p, cat, crit);
+    expect(result.score).toBe(
+      compositeScore(p.ratings, cat.weights, new Set(["taste", "value"]))
+    );
+  });
+
+  it("returns a null score, and no included contributions, when nothing contributes", () => {
+    const crit = [criterion("taste")];
+    const cat = category({ weights: { taste: 1 } });
+    const p = place({ id: "a", ratings: {} });
+    const result = explainScore(p, cat, crit);
+    expect(result.score).toBeNull();
+    expect(result.contributions).toEqual([
+      { criterionId: "taste", name: "taste", weight: 1, rating: null, included: false },
+    ]);
+  });
+});
+
+// ---- dominantContribution ----
+
+describe("dominantContribution", () => {
+  it("returns null when fewer than two criteria are included", () => {
+    const contributions = [
+      { criterionId: "a", name: "A", weight: 3, rating: 4, included: true },
+      { criterionId: "b", name: "B", weight: 1, rating: null, included: false },
+    ];
+    expect(dominantContribution(contributions)).toBeNull();
+  });
+
+  it("returns the included contribution with the highest weight", () => {
+    const contributions = [
+      { criterionId: "a", name: "A", weight: 3, rating: 4, included: true },
+      { criterionId: "b", name: "B", weight: 1, rating: 5, included: true },
+    ];
+    expect(dominantContribution(contributions)?.criterionId).toBe("a");
+  });
+
+  it("returns null when the top weight is tied", () => {
+    const contributions = [
+      { criterionId: "a", name: "A", weight: 2, rating: 4, included: true },
+      { criterionId: "b", name: "B", weight: 2, rating: 5, included: true },
+    ];
+    expect(dominantContribution(contributions)).toBeNull();
+  });
+});
+
+// ---- scoreAcrossCategories ----
+
+describe("scoreAcrossCategories", () => {
+  it("returns a score entry for every category the place belongs to, in the given order", () => {
+    const crit = [criterion("taste")];
+    const catA = category({ id: "cat-a", name: "Tacos", weights: { taste: 1 } });
+    const catB = category({ id: "cat-b", name: "Date Night", weights: { taste: 1 } });
+    const p = place({ id: "p", ratings: { taste: 4 }, categoryIds: ["cat-a", "cat-b"] });
+    const result = scoreAcrossCategories(p, [catA, catB], crit);
+    expect(result).toEqual([
+      { categoryId: "cat-a", name: "Tacos", score: 4 },
+      { categoryId: "cat-b", name: "Date Night", score: 4 },
+    ]);
+  });
+
+  it("excludes categories the place does not belong to", () => {
+    const crit = [criterion("taste")];
+    const catA = category({ id: "cat-a", weights: { taste: 1 } });
+    const catB = category({ id: "cat-b", weights: { taste: 1 } });
+    const p = place({ id: "p", ratings: { taste: 4 }, categoryIds: ["cat-a"] });
+    const result = scoreAcrossCategories(p, [catA, catB], crit);
+    expect(result.map((r) => r.categoryId)).toEqual(["cat-a"]);
+  });
+
+  it("reports a null score for a category where nothing contributes", () => {
+    const crit = [criterion("taste")];
+    const catA = category({ id: "cat-a", name: "Tacos", weights: { taste: 0 } }); // excluded
+    const p = place({ id: "p", ratings: { taste: 4 }, categoryIds: ["cat-a"] });
+    const result = scoreAcrossCategories(p, [catA], crit);
+    expect(result).toEqual([{ categoryId: "cat-a", name: "Tacos", score: null }]);
+  });
+});
+
+// ---- summarizeScore ----
+
+describe("summarizeScore", () => {
+  it("states no ratings contribute when the score is null", () => {
+    expect(summarizeScore("cat-a", { score: null, contributions: [] }, [])).toBe(
+      "No ratings contribute to this score yet."
+    );
+  });
+
+  it("names the dominant criterion by weight", () => {
+    const explanation = {
+      score: 4,
+      contributions: [
+        { criterionId: "a", name: "Food quality", weight: 3, rating: 4, included: true },
+        { criterionId: "b", name: "Value", weight: 1, rating: 5, included: true },
+      ],
+    };
+    expect(summarizeScore("cat-a", explanation, [])).toBe(
+      "Food quality (×3) carries the most weight here."
+    );
+  });
+
+  it('falls back to "equally" when there is no single dominant criterion', () => {
+    const explanation = {
+      score: 4,
+      contributions: [
+        { criterionId: "a", name: "Food quality", weight: 1, rating: 4, included: true },
+        { criterionId: "b", name: "Value", weight: 1, rating: 4, included: true },
+      ],
+    };
+    expect(summarizeScore("cat-a", explanation, [])).toBe(
+      "Every rated criterion counts equally here."
+    );
+  });
+
+  it("names the other category whose score diverges most from this one", () => {
+    const explanation = {
+      score: 4,
+      contributions: [
+        { criterionId: "a", name: "Food quality", weight: 3, rating: 4, included: true },
+        { criterionId: "b", name: "Value", weight: 1, rating: 4, included: true },
+      ],
+    };
+    const others = [
+      { categoryId: "cat-a", name: "Tacos", score: 4 }, // the current category — excluded
+      { categoryId: "cat-b", name: "Date Night", score: 3.2 }, // |3.2-4| = 0.8, largest gap
+      { categoryId: "cat-c", name: "Cheap Eats", score: 3.9 }, // |3.9-4| = 0.1
+    ];
+    expect(summarizeScore("cat-a", explanation, others)).toBe(
+      "Food quality (×3) carries the most weight here. The same ratings would score 3.2 in Date Night."
+    );
+  });
+
+  it("omits the divergence sentence when there is no other category with a score", () => {
+    const explanation = {
+      score: 4,
+      contributions: [
+        { criterionId: "a", name: "Food quality", weight: 3, rating: 4, included: true },
+        { criterionId: "b", name: "Value", weight: 1, rating: 4, included: true },
+      ],
+    };
+    expect(
+      summarizeScore("cat-a", explanation, [{ categoryId: "cat-a", name: "Tacos", score: 4 }])
+    ).toBe("Food quality (×3) carries the most weight here.");
   });
 });
