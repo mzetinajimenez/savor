@@ -26,7 +26,6 @@
 // backdrop tap all close without saving (Sheet's onClose, unchanged).
 
 import { useEffect, useState, type FormEvent } from "react";
-import { usePathname } from "next/navigation";
 import { useCategories, useCriteria } from "@/lib/hooks";
 import type { LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
@@ -75,14 +74,8 @@ function emptyForm(initial?: PlacePrefill) {
 }
 
 export function AddPlaceHost() {
-  const pathname = usePathname();
   const { open, openSheet, closeSheet } = useSheetParam("add");
   const [prefill, setPrefill] = useState<PlacePrefill | undefined>(undefined);
-
-  // /categories owns ?sheet=add for its own "new list" form. Both sheets are opened by an
-  // explicit user action on the surface that owns them, so they can never be asked for at
-  // once — but this host is mounted app-wide, so it has to decline the param there.
-  const owned = pathname !== "/categories";
 
   useEffect(() => {
     function handleOpen(e: Event) {
@@ -95,7 +88,7 @@ export function AddPlaceHost() {
 
   // Mounted only while open, so every fresh open gets a fresh AddPlaceSheet instance (and thus
   // fresh state) — no explicit "reset the form" step required on close.
-  if (!open || !owned) return null;
+  if (!open) return null;
   return <AddPlaceSheet onClose={closeSheet} initial={prefill} />;
 }
 

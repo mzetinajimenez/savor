@@ -26,7 +26,7 @@ function CategoriesInner() {
   const categories = useCategories();
   // One usePlaces() call + client-side count, rather than one query per category.
   const places = usePlaces();
-  const form = useSheetParam("add");
+  const form = useSheetParam("new-list");
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
