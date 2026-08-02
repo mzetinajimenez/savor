@@ -20,6 +20,12 @@ export interface PlacePrefill {
   sourceUrl?: string;
   sourcePlatform?: SocialPlatform;
   autoLookup?: boolean;
+  // Control flag, not form data: true when the caller is about to `router.replace` to a URL
+  // that already carries `?sheet=add` (only /import does this today). AddPlaceHost must record
+  // the prefill but skip its own pushState in that case — pushing here first would give the
+  // caller's replace only the just-pushed entry to overwrite, stranding the pre-navigation URL
+  // one entry below it in history instead of being cleanly replaced away.
+  deferOpen?: boolean;
 }
 
 export function emitAddPlace(prefill?: PlacePrefill) {

@@ -13,7 +13,9 @@
 // `PlacePrefill` in `detail` — undefined for the plain FAB/empty-state path, populated when the
 // /import share-link route (T7) wants the sheet to open pre-seeded. AddPlaceHost is the sole
 // listener: `addEventListener` on mount, `removeEventListener` on cleanup. Any number of
-// emitters, exactly one listener.
+// emitters, exactly one listener. /import's emit sets `PlacePrefill.deferOpen: true`, since it
+// immediately follows the emit with its own `router.replace` to a URL that already carries
+// `?sheet=add` — see that flag's doc in ui.tsx and app/import/page.tsx's header comment.
 //
 // Flow inside one sheet: name (required, optionally pre-seeded) -> live OSM suggestions as you
 // type (LookupCombobox owns the debounce/abort/cache timing — see lib/autocomplete.ts — and
@@ -79,8 +81,14 @@ export function AddPlaceHost() {
 
   useEffect(() => {
     function handleOpen(e: Event) {
-      setPrefill((e as CustomEvent<PlacePrefill | undefined>).detail);
-      openSheet();
+      const detail = (e as CustomEvent<PlacePrefill | undefined>).detail;
+      setPrefill(detail);
+      // /import sets deferOpen: true and follows this emit with its own router.replace to a
+      // URL that already carries ?sheet=add — calling openSheet() here too would pushState
+      // onto /import first, leaving that entry stranded below the replace (see PlacePrefill's
+      // deferOpen doc in ui.tsx). Every other caller (the FAB, empty states) has no navigation
+      // of its own, so openSheet() is what opens the sheet at all.
+      if (!detail?.deferOpen) openSheet();
     }
     window.addEventListener(ADD_PLACE_EVENT, handleOpen);
     return () => window.removeEventListener(ADD_PLACE_EVENT, handleOpen);
