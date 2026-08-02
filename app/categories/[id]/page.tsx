@@ -17,6 +17,7 @@ import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
 import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import { useLongPress } from "@/lib/useLongPress";
+import { useSheetParam } from "@/lib/useSheetParam";
 import type { RankedEntry } from "@/lib/ranking";
 import type { Category, Criterion } from "@/lib/types";
 
@@ -43,8 +44,8 @@ function CategoryDetailInner() {
   const rankedData = useRankedCategory(id);
   const categories = useCategories();
   const criteria = useCriteria();
-  const [editOpen, setEditOpen] = useState(false);
-  const [weightsOpen, setWeightsOpen] = useState(false);
+  const edit = useSheetParam("edit");
+  const weights = useSheetParam("weights");
   // Set the moment a delete is confirmed, before router.push("/categories") resolves. The
   // tombstone lands in Dexie (and useCategory flips to undefined) a beat before the route
   // actually changes, which would otherwise flash the "not found" state on the way out.
@@ -117,10 +118,10 @@ function CategoryDetailInner() {
         title={headerTitle}
         action={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setWeightsOpen(true)} className={actionButtonClass}>
+            <button type="button" onClick={weights.openSheet} className={actionButtonClass}>
               Weights
             </button>
-            <button type="button" onClick={() => setEditOpen(true)} className={actionButtonClass}>
+            <button type="button" onClick={edit.openSheet} className={actionButtonClass}>
               Edit
             </button>
           </div>
@@ -221,11 +222,11 @@ function CategoryDetailInner() {
         )}
       </section>
 
-      {editOpen ? (
+      {edit.open ? (
         <CategoryForm
           mode="edit"
           category={category}
-          onClose={() => setEditOpen(false)}
+          onClose={edit.closeSheet}
           onDeleted={() => {
             setLeaving(true);
             router.push("/categories");
@@ -233,7 +234,7 @@ function CategoryDetailInner() {
         />
       ) : null}
 
-      {weightsOpen ? <WeightsEditor category={category} onClose={() => setWeightsOpen(false)} /> : null}
+      {weights.open ? <WeightsEditor category={category} onClose={weights.closeSheet} /> : null}
     </>
   );
 }

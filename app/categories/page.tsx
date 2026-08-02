@@ -3,19 +3,30 @@
 // Lists tab. Grid of category cards (emoji, name, place count) with a "New list" action that
 // opens CategoryForm in create mode. Tapping a card navigates to /categories/[id].
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useCategories, usePlaces } from "@/lib/hooks";
+import { useSheetParam } from "@/lib/useSheetParam";
 import type { Category } from "@/lib/types";
 import { EmptyState, HeaderShell, PlusGlyph } from "@/app/components/ui";
 import CategoryForm from "@/app/components/categories/CategoryForm";
 
 export default function CategoriesPage() {
+  // useSheetParam() calls useSearchParams() — needs a Suspense boundary or `next build`
+  // fails. Same split as app/categories/[id]/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <CategoriesInner />
+    </Suspense>
+  );
+}
+
+function CategoriesInner() {
   const router = useRouter();
   const categories = useCategories();
   // One usePlaces() call + client-side count, rather than one query per category.
   const places = usePlaces();
-  const [formOpen, setFormOpen] = useState(false);
+  const form = useSheetParam("add");
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -34,7 +45,7 @@ export default function CategoriesPage() {
         action={
           <button
             type="button"
-            onClick={() => setFormOpen(true)}
+            onClick={form.openSheet}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
@@ -51,7 +62,7 @@ export default function CategoriesPage() {
         >
           <button
             type="button"
-            onClick={() => setFormOpen(true)}
+            onClick={form.openSheet}
             className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
@@ -71,11 +82,11 @@ export default function CategoriesPage() {
         </ul>
       )}
 
-      {formOpen ? (
+      {form.open ? (
         <CategoryForm
           mode="create"
           categories={categories ?? []}
-          onClose={() => setFormOpen(false)}
+          onClose={form.closeSheet}
         />
       ) : null}
     </>
