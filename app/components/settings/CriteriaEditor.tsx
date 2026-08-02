@@ -10,6 +10,7 @@
 
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { toast } from "@/app/components/Toast";
+import { ConfirmBox } from "@/app/components/ui";
 import { useCriteria } from "@/lib/hooks";
 import { createCriterion, deleteCriterion, updateCriterion } from "@/lib/repo";
 import type { Criterion } from "@/lib/types";
@@ -207,30 +208,19 @@ function CriterionRow({
       </div>
 
       {confirmingDelete ? (
-        <div className="mt-2.5 flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-          <p className="text-sm text-cream">
-            Delete “{criterion.name}”? Existing scores for this criterion will stop counting
-            toward rankings.
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={busy}
-              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={busy}
-              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
-            >
-              {busy ? "Deleting…" : "Delete"}
-            </button>
-          </div>
-        </div>
+        <ConfirmBox
+          className="mt-2.5"
+          message={
+            <>
+              Delete &ldquo;{criterion.name}&rdquo;? Existing scores for this criterion will
+              stop counting toward rankings.
+            </>
+          }
+          confirmLabel={busy ? "Deleting…" : "Delete"}
+          busy={busy}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={handleDelete}
+        />
       ) : null}
     </div>
   );

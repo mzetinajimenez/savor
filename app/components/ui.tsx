@@ -4,7 +4,7 @@
 // display + local-interaction components. The visual language ("Supper Club"): bottle green
 // surfaces, cream ink, butter-gold seals, Bodoni Moda display, Archivo utility labels.
 
-import { useId, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
 import type { SocialPlatform } from "@/lib/social/types";
 
@@ -346,5 +346,69 @@ export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/* ─── ConfirmBox ────────────────────────────────────────────────────────────
+   The inline destructive-confirm step, shared by four call sites that each had their own
+   copy. `role="alertdialog"` (not just a coral div) is what tells a screen reader something
+   now needs a decision, and the focus move is what puts the reader inside it — without it
+   the box appears visually and silently, and the user's focus is still on a "Delete" button
+   that has just changed meaning. It is inline rather than an overlay on purpose: it is a
+   confirm STEP inside an open sheet, not a second sheet stacked on the first. */
+export function ConfirmBox({
+  message,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  busy = false,
+  onCancel,
+  onConfirm,
+  className = "",
+}: {
+  message: ReactNode;
+  confirmLabel: string;
+  cancelLabel?: string;
+  busy?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  className?: string;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const messageId = useId();
+
+  useEffect(() => {
+    boxRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      ref={boxRef}
+      role="alertdialog"
+      aria-labelledby={messageId}
+      tabIndex={-1}
+      className={`flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5 outline-none ${className}`}
+    >
+      <p id={messageId} className="text-sm text-cream">
+        {message}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={busy}
+          className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
   );
 }

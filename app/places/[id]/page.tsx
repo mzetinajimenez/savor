@@ -20,7 +20,7 @@ import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
 import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
-import { Chip, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
+import { Chip, ConfirmBox, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
 import RatingEditor from "@/app/components/places/RatingEditor";
 import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import VisitForm from "@/app/components/visits/VisitForm";
@@ -228,9 +228,11 @@ function PlaceDetailInner() {
         </div>
 
         {criteria === undefined ? null : criteria.length === 0 ? (
-          <p className="mt-3 text-sm text-sage">
-            Add rating criteria in Settings to start rating places.
-          </p>
+          <EmptyState
+            emoji="⭐"
+            title="No criteria yet"
+            hint="Add rating criteria in Settings to start rating places."
+          />
         ) : (
           <div className="mt-3 flex flex-col divide-y divide-rule rounded-sm border border-sage-deep bg-ground-deep px-4">
             {criteria.map((c) => (
@@ -246,9 +248,11 @@ function PlaceDetailInner() {
       <section className="px-4 py-5">
         <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Lists</h2>
         {categories === undefined ? null : categories.length === 0 ? (
-          <p className="mt-3 text-sm text-sage">
-            No lists yet — create one from the Lists tab.
-          </p>
+          <EmptyState
+            emoji="🗂️"
+            title="No lists yet"
+            hint="Create one from the Lists tab to start ranking this place."
+          />
         ) : (
           <div className="mt-3 flex flex-wrap gap-2">
             {categories.map((c) => (
@@ -470,29 +474,18 @@ function PlaceEditSheet({
 
         <div className="mt-1 border-t border-rule pt-4">
           {confirmingDelete ? (
-            <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-              <p className="text-sm text-cream">
-                Delete &ldquo;{place.name}&rdquo;? This hides the place and its history from
-                savor.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
-                >
-                  {deleting ? "Deleting…" : "Delete"}
-                </button>
-              </div>
-            </div>
+            <ConfirmBox
+              message={
+                <>
+                  Delete &ldquo;{place.name}&rdquo;? This hides the place and its history from
+                  savor.
+                </>
+              }
+              confirmLabel={deleting ? "Deleting…" : "Delete"}
+              busy={deleting}
+              onCancel={() => setConfirmingDelete(false)}
+              onConfirm={handleDelete}
+            />
           ) : (
             <button
               type="button"

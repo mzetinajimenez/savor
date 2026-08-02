@@ -11,6 +11,7 @@ import { createCategory, deleteCategory, updateCategory } from "@/lib/repo";
 import type { Category } from "@/lib/types";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
+import { ConfirmBox } from "@/app/components/ui";
 
 // See WAVE-CONSTRAINTS.md's "standard input treatment" — every text input in this form shares
 // this exact class list so the app converges on one look.
@@ -140,28 +141,13 @@ export default function CategoryForm({
         {mode === "edit" && category ? (
           <div className="mt-1 border-t border-rule pt-4">
             {confirmingDelete ? (
-              <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-                <p className="text-sm text-cream">
-                  Delete “{category.name}”? This can’t be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDelete(false)}
-                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
-                  >
-                    {deleting ? "Deleting…" : "Delete"}
-                  </button>
-                </div>
-              </div>
+              <ConfirmBox
+                message={<>Delete &ldquo;{category.name}&rdquo;? This can&rsquo;t be undone.</>}
+                confirmLabel={deleting ? "Deleting…" : "Delete"}
+                busy={deleting}
+                onCancel={() => setConfirmingDelete(false)}
+                onConfirm={handleDelete}
+              />
             ) : (
               <button
                 type="button"

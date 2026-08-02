@@ -5,7 +5,14 @@
 // backdrop tap closes; Escape + focus trap come from useModalA11y. Presentational shell only —
 // forms and content render as children (T8+ fill it in).
 
-import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useId,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { dragOffset, dragVelocity, shouldDismiss } from "@/lib/sheetDrag";
 import { useModalA11y } from "@/lib/useModalA11y";
 
@@ -21,6 +28,9 @@ export default function Sheet({
   footer?: ReactNode;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Stacked sheets must not collide on a hardcoded id — the second sheet's aria-labelledby
+  // would resolve to the first sheet's <h2>.
+  const titleId = useId();
 
   // Drag-to-dismiss — bottom-sheet form only. Below `sm` the panel is edge-anchored with a
   // grab handle; from `sm` up it is a centred modal, where dragging down means nothing. The
@@ -83,7 +93,7 @@ export default function Sheet({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="sheet-title"
+        aria-labelledby={titleId}
         tabIndex={-1}
         style={{
           transform: offset ? `translateY(${offset}px)` : undefined,
@@ -106,7 +116,7 @@ export default function Sheet({
           />
           <div className="flex items-center justify-between gap-3 pb-3">
             <h2
-              id="sheet-title"
+              id={titleId}
               className="font-display text-2xl leading-none text-gold"
             >
               {title}
