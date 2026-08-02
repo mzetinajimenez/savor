@@ -308,7 +308,10 @@ function PlaceDetailInner() {
         <PlaceEditSheet
           place={place}
           onClose={edit.closeSheet}
-          onDeleted={() => router.push("/")}
+          // replace, not push: consumes the ?sheet=edit history entry instead of stacking a new
+          // one on top of it (PlaceEditSheet's handleDelete deliberately does not call onClose
+          // on this path — see its comment).
+          onDeleted={() => router.replace("/")}
         />
       ) : null}
 
@@ -375,7 +378,13 @@ function PlaceEditSheet({
     try {
       await deletePlace(place.id);
       toast("Place deleted");
-      onClose();
+      // Deliberately no onClose() here: closeSheet's history.back() is a queued traversal that
+      // resolves against whatever the history index is *when the queue drains*, not when it was
+      // called — a synchronous router navigation right after it would land first and the
+      // deferred back() would then resolve against the post-navigation index, landing on
+      // ?sheet=edit for a place that no longer exists. Navigating away unmounts this sheet on
+      // its own; the caller must navigate with router.replace (not push) so the replace itself
+      // consumes the ?sheet= entry instead of stacking a new one on top of it.
       onDeleted();
     } catch {
       toast("Couldn't delete that place — try again", true);

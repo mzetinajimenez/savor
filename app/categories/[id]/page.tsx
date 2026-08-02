@@ -229,7 +229,10 @@ function CategoryDetailInner() {
           onClose={edit.closeSheet}
           onDeleted={() => {
             setLeaving(true);
-            router.push("/categories");
+            // replace, not push: consumes the ?sheet=edit history entry instead of stacking a
+            // new one on top of it (CategoryForm's handleDelete deliberately does not call
+            // closeSheet on this path — see its comment).
+            router.replace("/categories");
           }}
         />
       ) : null}

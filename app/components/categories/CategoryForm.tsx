@@ -84,11 +84,13 @@ export default function CategoryForm({
     try {
       await deleteCategory(category.id);
       toast("List deleted");
-      // Close before navigating: onClose (edit.closeSheet) goes through history.back() to
-      // consume the sheet's pushed entry. If onDeleted's router.push ran first, it would push a
-      // new entry on top, and the subsequent history.back() would land one entry short of
-      // /categories — see PlaceEditSheet's identical ordering in app/places/[id]/page.tsx.
-      onClose();
+      // Deliberately no onClose() here: closeSheet's history.back() is a queued traversal that
+      // resolves against whatever the history index is *when the queue drains*, not when it was
+      // called — a synchronous router navigation right after it would land first and the
+      // deferred back() would then resolve against the post-navigation index, landing on
+      // ?sheet=edit for an entity that no longer exists. Navigating away unmounts this sheet on
+      // its own; the caller must navigate with router.replace (not push) so the replace itself
+      // consumes the ?sheet= entry instead of stacking a new one on top of it.
       onDeleted?.();
     } catch {
       toast("Couldn't delete that list — try again", true);
