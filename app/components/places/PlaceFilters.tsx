@@ -91,7 +91,7 @@ function ChipRow({ ariaLabel, children }: { ariaLabel: string; children: ReactNo
     <div
       role="group"
       aria-label={ariaLabel}
-      className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="-mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {children}
     </div>

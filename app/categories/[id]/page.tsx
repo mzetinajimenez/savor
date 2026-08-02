@@ -22,7 +22,7 @@ import type { RankedEntry } from "@/lib/ranking";
 import type { Category, Criterion } from "@/lib/types";
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule";
 
 export default function CategoryDetailPage() {
   // useSearchParams() (below, in the tab switch) makes this route dynamic and requires a
@@ -95,7 +95,7 @@ function CategoryDetailInner() {
         >
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             Back to Lists
           </Link>
@@ -145,7 +145,7 @@ function CategoryDetailInner() {
         <div
           role="group"
           aria-label="Filter by city"
-          className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <Chip active={!cityFilter} onClick={() => updateParam("city", null)} className="whitespace-nowrap">
             All cities

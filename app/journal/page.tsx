@@ -64,7 +64,7 @@ function LogVisitButton({ onClick, className = "" }: { onClick: () => void; clas
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-sm bg-gold font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-sm bg-gold font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep ${className}`}
     >
       <PlusGlyph className="h-4 w-4" />
       Log a visit

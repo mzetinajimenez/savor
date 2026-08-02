@@ -107,7 +107,7 @@ export default function BackupPanel() {
           type="button"
           onClick={handleExport}
           disabled={busy || pending !== null}
-          className="min-h-11 flex-1 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {status === "exporting" ? "Exporting…" : "Export"}
         </button>
@@ -115,7 +115,7 @@ export default function BackupPanel() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={busy || pending !== null}
-          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
         >
           {status === "reading" ? "Reading…" : "Import"}
         </button>
@@ -139,7 +139,7 @@ export default function BackupPanel() {
               type="button"
               onClick={() => setPending(null)}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
             >
               Cancel
             </button>
@@ -147,7 +147,7 @@ export default function BackupPanel() {
               type="button"
               onClick={handleConfirmImport}
               disabled={busy}
-              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
             >
               {status === "importing" ? "Restoring…" : "Replace data"}
             </button>

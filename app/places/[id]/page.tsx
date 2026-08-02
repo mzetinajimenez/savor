@@ -31,10 +31,10 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 };
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-[0.97] active:bg-ground-deep";
 
 const goldButtonClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep";
 
 // Local-timezone-safe date formatting for a plain YYYY-MM-DD string (matches the pattern used by
 // VisitForm/JournalPage for the same `<input type="date">` format — deliberately not
@@ -101,7 +101,7 @@ function PlaceDetailInner() {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             Back to savor
           </Link>
@@ -163,7 +163,7 @@ function PlaceDetailInner() {
           // "Been" and "Want to try" are distinguished by the label, not by colour: this is a
           // status toggle, and gold-vs-gold said nothing while still reading as active state.
           // Matches PlaceCard, which renders the same datum as a recessed Chip.
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-95 active:bg-raised disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-[0.97] active:bg-raised disabled:opacity-60"
         >
           {STATUS_LABEL[place.status]}
         </button>
@@ -401,7 +401,7 @@ function PlaceEditSheet({
           type="submit"
           form="place-edit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -479,7 +479,7 @@ function PlaceEditSheet({
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(false)}
-                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
+                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
                 >
                   Cancel
                 </button>
@@ -487,7 +487,7 @@ function PlaceEditSheet({
                   type="button"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+                  className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
                 >
                   {deleting ? "Deleting…" : "Delete"}
                 </button>

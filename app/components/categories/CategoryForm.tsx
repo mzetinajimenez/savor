@@ -108,7 +108,7 @@ export default function CategoryForm({
           type="submit"
           form="category-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -148,7 +148,7 @@ export default function CategoryForm({
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
-                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
+                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
                   >
                     Cancel
                   </button>
@@ -156,7 +156,7 @@ export default function CategoryForm({
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
+                    className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
                   >
                     {deleting ? "Deleting…" : "Delete"}
                   </button>

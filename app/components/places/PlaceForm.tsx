@@ -257,7 +257,7 @@ function AddPlaceSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
+            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
           >
             Cancel
           </button>
@@ -312,7 +312,7 @@ function AddPlaceSheet({
               <button
                 type="button"
                 onClick={() => setPasteOpen(true)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule"
               >
                 Paste a link
               </button>

@@ -46,7 +46,7 @@ function CategoriesInner() {
           <button
             type="button"
             onClick={form.openSheet}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
             New list
@@ -63,7 +63,7 @@ function CategoriesInner() {
           <button
             type="button"
             onClick={form.openSheet}
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             <PlusGlyph className="h-4 w-4" />
             New list
