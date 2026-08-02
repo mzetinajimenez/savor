@@ -304,7 +304,7 @@ function AddPlaceSheet({
               onClick={() =>
                 setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
               }
-              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
+              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
             >
               Remove
             </button>

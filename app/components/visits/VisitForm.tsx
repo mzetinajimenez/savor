@@ -98,7 +98,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
           type="submit"
           form="visit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-40 disabled:active:scale-100"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save visit"}
         </button>
