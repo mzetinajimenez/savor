@@ -26,12 +26,14 @@
 // backdrop tap all close without saving (Sheet's onClose, unchanged).
 
 import { useEffect, useState, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
 import { useCategories, useCriteria } from "@/lib/hooks";
 import type { LookupResult } from "@/lib/lookup";
 import { createPlace } from "@/lib/repo";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
 import type { PlaceStatus } from "@/lib/types";
+import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
 import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
@@ -73,22 +75,28 @@ function emptyForm(initial?: PlacePrefill) {
 }
 
 export function AddPlaceHost() {
-  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const { open, openSheet, closeSheet } = useSheetParam("add");
   const [prefill, setPrefill] = useState<PlacePrefill | undefined>(undefined);
+
+  // /categories owns ?sheet=add for its own "new list" form. Both sheets are opened by an
+  // explicit user action on the surface that owns them, so they can never be asked for at
+  // once — but this host is mounted app-wide, so it has to decline the param there.
+  const owned = pathname !== "/categories";
 
   useEffect(() => {
     function handleOpen(e: Event) {
       setPrefill((e as CustomEvent<PlacePrefill | undefined>).detail);
-      setOpen(true);
+      openSheet();
     }
     window.addEventListener(ADD_PLACE_EVENT, handleOpen);
     return () => window.removeEventListener(ADD_PLACE_EVENT, handleOpen);
-  }, []);
+  });
 
   // Mounted only while open, so every fresh open gets a fresh AddPlaceSheet instance (and thus
   // fresh state) — no explicit "reset the form" step required on close.
-  if (!open) return null;
-  return <AddPlaceSheet onClose={() => setOpen(false)} initial={prefill} />;
+  if (!open || !owned) return null;
+  return <AddPlaceSheet onClose={closeSheet} initial={prefill} />;
 }
 
 function AddPlaceSheet({
