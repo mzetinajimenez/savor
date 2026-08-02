@@ -239,11 +239,14 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   `schemaVersion` equality (see `lib/backup.ts`), so the moment `SCHEMA_VERSION`
   moves to 2, every v1 export becomes unimportable. Design and land a
   migration step (v1 → v2 → …) before that bump ships, not after.
-- **e2e coverage for the `?sheet=` back-button path.** The `__NA` reload trap means Back,
-  Forward, and navigating away with a sheet open each need a real browser assertion, and
-  Phase 4 never exercised them in a browser (see below). Land them as Playwright specs when
-  Phase 6 scaffolds `@playwright/test` (a new devDependency — ask first).
-- **Phase 4's browser verification is outstanding.** Every implementation task's browser
-  check was blocked by a locked automation profile, so drag-to-dismiss, the Back-does-not-
-  reload assertion, the delete flows, and `ConfirmBox`'s focus behavior have been verified by
-  code review and the unit/build/lint suite only, never in a real browser.
+- **No automated e2e coverage for the `?sheet=` back-button path.** A manual browser pass at
+  the end of Phase 4 exercised Back, Forward, and navigating away with a sheet open (and
+  caught two real defects along the way — a `ConfirmBox` focus restore that was a no-op, and
+  a `?sheet=add` name collision — both fixed), but none of it is automated, so a future
+  regression here won't fail CI. Land them as Playwright specs when Phase 6 scaffolds
+  `@playwright/test` (a new devDependency — ask first).
+- **Drag-to-dismiss is untested on a real touch device.** `lib/sheetDrag.ts`'s thresholds
+  (`DISMISS_FRACTION`, `DISMISS_VELOCITY`) have unit-test coverage, but no one has dragged a
+  sheet with an actual finger on actual glass, and `prefers-reduced-motion` suppression
+  (`dragEnabled()`) has never been toggled at the OS level to confirm the gesture actually
+  turns off.
