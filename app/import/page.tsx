@@ -11,14 +11,26 @@
 //
 // Both paths end the same way: `resolveSharedLink` (T4) never throws, so either it recognizes
 // the platform (nameGuess may or may not be present) or it doesn't (bare source, still stored) —
-// either way we `emitAddPlace` (T5) and `router.replace("/")` so the prefilled sheet — which
-// lives in the root layout, not this page — ends up sitting over the Places tab. Emit MUST
-// happen before the replace: AddPlaceHost is mounted in app/layout.tsx, which persists across
-// the client-side navigation, but the event only reaches a listener that's already attached.
-// runImport emits only after `await resolveSharedLink(...)` rather than synchronously precisely
-// because that defer past the synchronous passive-effect flush is what lets AddPlaceHost's
-// listener attach first on a cold load — emitting synchronously on any fast-path would drop the
-// prefill instead.
+// either way we `emitAddPlace` (T5) with `deferOpen: true` and then `router.replace("/?sheet=add")`
+// so the prefilled sheet — which lives in the root layout, not this page — ends up sitting over
+// the Places tab. Emit MUST happen before the replace: AddPlaceHost is mounted in
+// app/layout.tsx, which persists across the client-side navigation, but the event only reaches
+// a listener that's already attached, and the prefill must be sitting in AddPlaceHost's state
+// before its sheet mounts. runImport emits only after `await resolveSharedLink(...)` rather
+// than synchronously precisely because that defer past the synchronous passive-effect flush is
+// what lets AddPlaceHost's listener attach first on a cold load — emitting synchronously on any
+// fast-path would drop the prefill instead.
+//
+// The destination URL carrying `?sheet=add` is the binding constraint here, not just the emit
+// ordering above: AddPlaceHost's `open` is derived from the URL (`useSheetParam`), so the sheet
+// only stays open post-navigation if the URL we land on says so. `deferOpen: true` tells
+// AddPlaceHost's listener to record the prefill without also calling its own `openSheet()` —
+// if it did, that pushState would land on the *current* `/import?...` URL, and this replace
+// would only overwrite that just-pushed entry, stranding the pre-navigation `/import` URL one
+// entry below it in history (Back would return to a stale "Importing…" page instead of leaving
+// the app). Doing the sheet-opening entirely via one `router.replace("/?sheet=add")` keeps the
+// history stack exactly one entry deep for the whole import, so Back from the open sheet leaves
+// cleanly with nothing stray in between.
 //
 // Build note: useSearchParams() makes this route dynamic, and Next.js requires the component
 // that calls it to sit inside a <Suspense> boundary or the production build fails outright
@@ -30,7 +42,13 @@ import { useEffect, useMemo, useRef, useState, Suspense, type FormEvent } from "
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
+import { withSheet } from "@/lib/sheetParam";
 import { emitAddPlace, PasteLinkField } from "@/app/components/ui";
+
+// The single navigation target for both runImport branches below: "/" with the add-place
+// sheet's own ?sheet=add already on it, so one router.replace both lands on the Places tab
+// and opens the sheet in the same history entry.
+const ADD_PLACE_DESTINATION = `/${withSheet("", "add")}`;
 
 export default function ImportPage() {
   return (
@@ -79,13 +97,14 @@ function ImportInner() {
           sourceUrl: link.url,
           sourcePlatform: link.platform,
           autoLookup: Boolean(link.nameGuess),
+          deferOpen: true,
         });
       } else {
         // Valid URL, unrecognized platform — still hand off the source; the sheet opens
         // want_to_try with it stored and the user types the name themselves.
-        emitAddPlace({ sourceUrl: url });
+        emitAddPlace({ sourceUrl: url, deferOpen: true });
       }
-      router.replace("/");
+      router.replace(ADD_PLACE_DESTINATION);
     } catch {
       // Defense in depth: resolveSharedLink is structurally guaranteed not to throw (see its
       // own try/catch backstop in lib/social/index.ts), so this branch should be unreachable in

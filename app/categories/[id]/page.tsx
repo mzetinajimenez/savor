@@ -17,11 +17,12 @@ import CategoryForm from "@/app/components/categories/CategoryForm";
 import WeightsEditor from "@/app/components/categories/WeightsEditor";
 import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import { useLongPress } from "@/lib/useLongPress";
+import { useSheetParam } from "@/lib/useSheetParam";
 import type { RankedEntry } from "@/lib/ranking";
 import type { Category, Criterion } from "@/lib/types";
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule";
 
 export default function CategoryDetailPage() {
   // useSearchParams() (below, in the tab switch) makes this route dynamic and requires a
@@ -43,8 +44,8 @@ function CategoryDetailInner() {
   const rankedData = useRankedCategory(id);
   const categories = useCategories();
   const criteria = useCriteria();
-  const [editOpen, setEditOpen] = useState(false);
-  const [weightsOpen, setWeightsOpen] = useState(false);
+  const edit = useSheetParam("edit");
+  const weights = useSheetParam("weights");
   // Set the moment a delete is confirmed, before router.push("/categories") resolves. The
   // tombstone lands in Dexie (and useCategory flips to undefined) a beat before the route
   // actually changes, which would otherwise flash the "not found" state on the way out.
@@ -94,7 +95,7 @@ function CategoryDetailInner() {
         >
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             Back to Lists
           </Link>
@@ -117,10 +118,10 @@ function CategoryDetailInner() {
         title={headerTitle}
         action={
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setWeightsOpen(true)} className={actionButtonClass}>
+            <button type="button" onClick={weights.openSheet} className={actionButtonClass}>
               Weights
             </button>
-            <button type="button" onClick={() => setEditOpen(true)} className={actionButtonClass}>
+            <button type="button" onClick={edit.openSheet} className={actionButtonClass}>
               Edit
             </button>
           </div>
@@ -144,7 +145,7 @@ function CategoryDetailInner() {
         <div
           role="group"
           aria-label="Filter by city"
-          className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <Chip active={!cityFilter} onClick={() => updateParam("city", null)} className="whitespace-nowrap">
             All cities
@@ -221,19 +222,22 @@ function CategoryDetailInner() {
         )}
       </section>
 
-      {editOpen ? (
+      {edit.open ? (
         <CategoryForm
           mode="edit"
           category={category}
-          onClose={() => setEditOpen(false)}
+          onClose={edit.closeSheet}
           onDeleted={() => {
             setLeaving(true);
-            router.push("/categories");
+            // replace, not push: consumes the ?sheet=edit history entry instead of stacking a
+            // new one on top of it (CategoryForm's handleDelete deliberately does not call
+            // closeSheet on this path — see its comment).
+            router.replace("/categories");
           }}
         />
       ) : null}
 
-      {weightsOpen ? <WeightsEditor category={category} onClose={() => setWeightsOpen(false)} /> : null}
+      {weights.open ? <WeightsEditor category={category} onClose={weights.closeSheet} /> : null}
     </>
   );
 }

@@ -12,14 +12,15 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { useCategories, useCriteria, usePlace, useVisits } from "@/lib/hooks";
 import { compositeScore } from "@/lib/ranking";
 import { deletePlace, updatePlace } from "@/lib/repo";
 import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
+import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
-import { Chip, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
+import { Chip, ConfirmBox, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
 import RatingEditor from "@/app/components/places/RatingEditor";
 import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import VisitForm from "@/app/components/visits/VisitForm";
@@ -30,10 +31,10 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 };
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-95 active:bg-ground-deep";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-[0.97] active:bg-ground-deep";
 
 const goldButtonClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep";
 
 // Local-timezone-safe date formatting for a plain YYYY-MM-DD string (matches the pattern used by
 // VisitForm/JournalPage for the same `<input type="date">` format — deliberately not
@@ -49,6 +50,17 @@ function formatVisitDate(dateStr: string): string {
 }
 
 export default function PlaceDetailPage() {
+  // useSheetParam() calls useSearchParams(), which makes this route dynamic and requires a
+  // Suspense boundary around its caller or `next build` fails — same split as
+  // app/categories/[id]/page.tsx and app/import/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <PlaceDetailInner />
+    </Suspense>
+  );
+}
+
+function PlaceDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const place = usePlace(id);
@@ -56,10 +68,15 @@ export default function PlaceDetailPage() {
   const criteria = useCriteria();
   const visits = useVisits(id);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [ratingEditorOpen, setRatingEditorOpen] = useState(false);
-  const [visitFormOpen, setVisitFormOpen] = useState(false);
+  const edit = useSheetParam("edit");
+  const ratings = useSheetParam("ratings");
+  const visit = useSheetParam("visit");
+  const score = useSheetParam("score");
   const [statusPending, setStatusPending] = useState(false);
+  // Which category the breakdown is for. Deliberately NOT in the query — the route already
+  // owns an id (the place), and a second entity id in the URL is exactly what the sheet-param
+  // convention rules out. `score.open` is the source of truth for whether it shows; this is
+  // only the argument. When Back clears the param the sheet unmounts and this goes unread.
   const [breakdownCategoryId, setBreakdownCategoryId] = useState<string | null>(null);
 
   // Belt-and-suspenders with hooks.ts's own tombstone filter (matches app/page.tsx's identical
@@ -84,7 +101,7 @@ export default function PlaceDetailPage() {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
           >
             Back to savor
           </Link>
@@ -108,7 +125,7 @@ export default function PlaceDetailPage() {
     try {
       await updatePlace(currentPlace.id, { status: next });
       // Marking a want_to_try place as been is the "rate it now" moment — open the editor.
-      if (next === "been") setRatingEditorOpen(true);
+      if (next === "been") ratings.openSheet();
     } catch {
       toast("Couldn't update status", true);
     } finally {
@@ -132,7 +149,7 @@ export default function PlaceDetailPage() {
       <HeaderShell
         title={place.name}
         action={
-          <button type="button" onClick={() => setEditOpen(true)} className={actionButtonClass}>
+          <button type="button" onClick={edit.openSheet} className={actionButtonClass}>
             Edit
           </button>
         }
@@ -146,7 +163,7 @@ export default function PlaceDetailPage() {
           // "Been" and "Want to try" are distinguished by the label, not by colour: this is a
           // status toggle, and gold-vs-gold said nothing while still reading as active state.
           // Matches PlaceCard, which renders the same datum as a recessed Chip.
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-95 active:bg-raised disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-[0.97] active:bg-raised disabled:opacity-60"
         >
           {STATUS_LABEL[place.status]}
         </button>
@@ -176,15 +193,21 @@ export default function PlaceDetailPage() {
             {place.categoryIds.map((categoryId) => {
               const category = categories.find((c) => c.id === categoryId);
               if (!category) return null;
-              const score = compositeScore(place.ratings, category.weights, liveCriterionIds);
-              if (score === null) return null;
+              const placeScore = compositeScore(place.ratings, category.weights, liveCriterionIds);
+              if (placeScore === null) return null;
               return (
-                <Chip key={categoryId} onClick={() => setBreakdownCategoryId(categoryId)}>
+                <Chip
+                  key={categoryId}
+                  onClick={() => {
+                    setBreakdownCategoryId(categoryId);
+                    score.openSheet();
+                  }}
+                >
                   <span className="mr-1">
                     {category.emoji ? `${category.emoji} ` : ""}
                     {category.name}
                   </span>
-                  <ScoreBadge score={score} size="sm" />
+                  <ScoreBadge score={placeScore} size="sm" />
                 </Chip>
               );
             })}
@@ -197,7 +220,7 @@ export default function PlaceDetailPage() {
           <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Ratings</h2>
           <button
             type="button"
-            onClick={() => setRatingEditorOpen(true)}
+            onClick={ratings.openSheet}
             className={goldButtonClass}
           >
             Edit ratings
@@ -205,9 +228,11 @@ export default function PlaceDetailPage() {
         </div>
 
         {criteria === undefined ? null : criteria.length === 0 ? (
-          <p className="mt-3 text-sm text-sage">
-            Add rating criteria in Settings to start rating places.
-          </p>
+          <EmptyState
+            emoji="⭐"
+            title="No criteria yet"
+            hint="Add rating criteria in Settings to start rating places."
+          />
         ) : (
           <div className="mt-3 flex flex-col divide-y divide-rule rounded-sm border border-sage-deep bg-ground-deep px-4">
             {criteria.map((c) => (
@@ -223,9 +248,11 @@ export default function PlaceDetailPage() {
       <section className="px-4 py-5">
         <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Lists</h2>
         {categories === undefined ? null : categories.length === 0 ? (
-          <p className="mt-3 text-sm text-sage">
-            No lists yet — create one from the Lists tab.
-          </p>
+          <EmptyState
+            emoji="🗂️"
+            title="No lists yet"
+            hint="Create one from the Lists tab to start ranking this place."
+          />
         ) : (
           <div className="mt-3 flex flex-wrap gap-2">
             {categories.map((c) => (
@@ -247,7 +274,7 @@ export default function PlaceDetailPage() {
           <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Visits</h2>
           <button
             type="button"
-            onClick={() => setVisitFormOpen(true)}
+            onClick={visit.openSheet}
             className={goldButtonClass}
           >
             <PlusGlyph className="h-4 w-4" />
@@ -281,27 +308,28 @@ export default function PlaceDetailPage() {
         )}
       </section>
 
-      {editOpen ? (
+      {edit.open ? (
         <PlaceEditSheet
           place={place}
-          onClose={() => setEditOpen(false)}
-          onDeleted={() => router.push("/")}
+          onClose={edit.closeSheet}
+          // replace, not push: consumes the ?sheet=edit history entry instead of stacking a new
+          // one on top of it (PlaceEditSheet's handleDelete deliberately does not call onClose
+          // on this path — see its comment).
+          onDeleted={() => router.replace("/")}
         />
       ) : null}
 
-      {ratingEditorOpen ? (
-        <RatingEditor place={place} onClose={() => setRatingEditorOpen(false)} />
-      ) : null}
+      {ratings.open ? <RatingEditor place={place} onClose={ratings.closeSheet} /> : null}
 
-      <VisitForm open={visitFormOpen} onClose={() => setVisitFormOpen(false)} placeId={place.id} />
+      <VisitForm open={visit.open} onClose={visit.closeSheet} placeId={place.id} />
 
-      {breakdownCategoryId && categories !== undefined && criteria !== undefined ? (
+      {score.open && breakdownCategoryId && categories !== undefined && criteria !== undefined ? (
         <ScoreBreakdownSheet
           place={currentPlace}
           categoryId={breakdownCategoryId}
           categories={categories}
           criteria={criteria}
-          onClose={() => setBreakdownCategoryId(null)}
+          onClose={score.closeSheet}
         />
       ) : null}
     </>
@@ -354,8 +382,14 @@ function PlaceEditSheet({
     try {
       await deletePlace(place.id);
       toast("Place deleted");
+      // Deliberately no onClose() here: closeSheet's history.back() is a queued traversal that
+      // resolves against whatever the history index is *when the queue drains*, not when it was
+      // called — a synchronous router navigation right after it would land first and the
+      // deferred back() would then resolve against the post-navigation index, landing on
+      // ?sheet=edit for a place that no longer exists. Navigating away unmounts this sheet on
+      // its own; the caller must navigate with router.replace (not push) so the replace itself
+      // consumes the ?sheet= entry instead of stacking a new one on top of it.
       onDeleted();
-      onClose();
     } catch {
       toast("Couldn't delete that place — try again", true);
       setDeleting(false);
@@ -371,7 +405,7 @@ function PlaceEditSheet({
           type="submit"
           form="place-edit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -440,34 +474,23 @@ function PlaceEditSheet({
 
         <div className="mt-1 border-t border-rule pt-4">
           {confirmingDelete ? (
-            <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-              <p className="text-sm text-cream">
-                Delete &ldquo;{place.name}&rdquo;? This hides the place and its history from
-                savor.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
-                >
-                  {deleting ? "Deleting…" : "Delete"}
-                </button>
-              </div>
-            </div>
+            <ConfirmBox
+              message={
+                <>
+                  Delete &ldquo;{place.name}&rdquo;? This hides the place and its history from
+                  savor.
+                </>
+              }
+              confirmLabel={deleting ? "Deleting…" : "Delete"}
+              busy={deleting}
+              onCancel={() => setConfirmingDelete(false)}
+              onConfirm={handleDelete}
+            />
           ) : (
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
+              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
             >
               Delete place
             </button>

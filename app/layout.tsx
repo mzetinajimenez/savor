@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Bodoni_Moda, Hanken_Grotesk } from "next/font/google";
+import { Suspense } from "react";
 import AppInit from "./components/AppInit";
 import BottomNav from "./components/BottomNav";
 import { AddPlaceHost } from "./components/places/PlaceForm";
@@ -80,7 +81,12 @@ export default function RootLayout({
         <BottomNav />
         <Toaster />
         {/* T8's add-place sheet: listens for the FAB's savor:add-place event, renders on demand. */}
-        <AddPlaceHost />
+        {/* Its own boundary: AddPlaceHost calls useSearchParams(), and an unbounded call in
+            the root layout would push every page's static shell to client rendering. Scoped
+            here, only this (null-rendering) host defers. */}
+        <Suspense fallback={null}>
+          <AddPlaceHost />
+        </Suspense>
       </body>
     </html>
   );

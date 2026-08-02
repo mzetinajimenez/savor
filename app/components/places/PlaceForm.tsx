@@ -13,7 +13,9 @@
 // `PlacePrefill` in `detail` — undefined for the plain FAB/empty-state path, populated when the
 // /import share-link route (T7) wants the sheet to open pre-seeded. AddPlaceHost is the sole
 // listener: `addEventListener` on mount, `removeEventListener` on cleanup. Any number of
-// emitters, exactly one listener.
+// emitters, exactly one listener. /import's emit sets `PlacePrefill.deferOpen: true`, since it
+// immediately follows the emit with its own `router.replace` to a URL that already carries
+// `?sheet=add` — see that flag's doc in ui.tsx and app/import/page.tsx's header comment.
 //
 // Flow inside one sheet: name (required, optionally pre-seeded) -> live OSM suggestions as you
 // type (LookupCombobox owns the debounce/abort/cache timing — see lib/autocomplete.ts — and
@@ -32,6 +34,7 @@ import { createPlace } from "@/lib/repo";
 import { resolveSharedLink } from "@/lib/social";
 import { pickUrl } from "@/lib/social/pickUrl";
 import type { PlaceStatus } from "@/lib/types";
+import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "../Sheet";
 import { toast } from "../Toast";
 import { ADD_PLACE_EVENT, Chip, PasteLinkField, RatingRow, type PlacePrefill } from "../ui";
@@ -73,22 +76,44 @@ function emptyForm(initial?: PlacePrefill) {
 }
 
 export function AddPlaceHost() {
-  const [open, setOpen] = useState(false);
+  const { open, openSheet, closeSheet } = useSheetParam("add");
   const [prefill, setPrefill] = useState<PlacePrefill | undefined>(undefined);
+  // Tracks `open` as of the last render so the reset below runs exactly once per close, as a
+  // render-phase state adjustment rather than an effect (see React's "adjusting state when a
+  // prop changes" — a setState here is fine because it's conditioned on a value actually
+  // changing since the last render, so it can't cascade).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    // Sheet just closed: drop any held prefill so a stale Back-then-Forward can't resurrect a
+    // previous import's sourceUrl into a sheet that looks freshly opened.
+    if (!open) setPrefill(undefined);
+  }
 
   useEffect(() => {
     function handleOpen(e: Event) {
-      setPrefill((e as CustomEvent<PlacePrefill | undefined>).detail);
-      setOpen(true);
+      const detail = (e as CustomEvent<PlacePrefill | undefined>).detail;
+      setPrefill(detail);
+      // /import sets deferOpen: true and follows this emit with its own router.replace to a
+      // URL that already carries ?sheet=add — calling openSheet() here too would pushState
+      // onto /import first, leaving that entry stranded below the replace (see PlacePrefill's
+      // deferOpen doc in ui.tsx). Every other caller (the FAB, empty states) has no navigation
+      // of its own, so openSheet() is what opens the sheet at all.
+      if (!detail?.deferOpen) openSheet();
     }
     window.addEventListener(ADD_PLACE_EVENT, handleOpen);
     return () => window.removeEventListener(ADD_PLACE_EVENT, handleOpen);
-  }, []);
+    // No dependency array on purpose: openSheet/closeSheet are recreated each render (they
+    // close over `open`, which useSheetParam derives fresh from useSearchParams()). A `[]`
+    // closure would capture this render's `open` — and thus this render's openSheet — forever,
+    // so a handleOpen firing after the sheet had already been opened once would still see
+    // `open: false` and pushState a second, redundant ?sheet=add entry.
+  });
 
   // Mounted only while open, so every fresh open gets a fresh AddPlaceSheet instance (and thus
   // fresh state) — no explicit "reset the form" step required on close.
   if (!open) return null;
-  return <AddPlaceSheet onClose={() => setOpen(false)} initial={prefill} />;
+  return <AddPlaceSheet onClose={closeSheet} initial={prefill} />;
 }
 
 function AddPlaceSheet({
@@ -249,7 +274,7 @@ function AddPlaceSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
+            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
           >
             Cancel
           </button>
@@ -279,7 +304,7 @@ function AddPlaceSheet({
               onClick={() =>
                 setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
               }
-              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
+              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
             >
               Remove
             </button>
@@ -304,7 +329,7 @@ function AddPlaceSheet({
               <button
                 type="button"
                 onClick={() => setPasteOpen(true)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule"
               >
                 Paste a link
               </button>

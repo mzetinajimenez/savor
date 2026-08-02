@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 177 tests in 10 files today; keep them passing.
+  must all pass. 261 tests in 14 files today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
   asking first — prefer a built-in or a few lines of local code. (The PWA icons,
@@ -46,11 +46,11 @@ sabor/
 │   ├── settings/page.tsx         # "/settings" tab — criteria editor + backup panel
 │   ├── api/lookup/route.ts       # GET /api/lookup?q= — Node-runtime Photon (OSM) proxy; owns the User-Agent
 │   └── components/
-│       ├── AppInit.tsx           # renders null; runs useDbInit() exactly once (seed + request persistent storage)
+│       ├── AppInit.tsx           # renders null; runs useDbInit() exactly once (seed + request persistent storage) + useStripSheetParamOnLoad()
 │       ├── BottomNav.tsx         # fixed 4-tab nav + elevated ember "+" FAB (dispatches savor:add-place)
-│       ├── Sheet.tsx             # overlay shell: bottom-sheet ≤sm / centered modal ≥sm; h-dvh; backdrop-close; useModalA11y
+│       ├── Sheet.tsx             # overlay shell: bottom-sheet ≤sm / centered modal ≥sm; h-dvh; backdrop-close; drag-to-dismiss; useModalA11y
 │       ├── Toast.tsx             # toast() module-level pub/sub + <Toaster/> (no context)
-│       ├── ui.tsx                # presentational primitives — HeaderShell, Chip, EmptyState, ScoreBadge, RatingRow, glyphs
+│       ├── ui.tsx                # presentational primitives — HeaderShell, Chip, EmptyState, ScoreBadge, RatingRow, ConfirmBox, glyphs
 │       ├── places/
 │       │   ├── PlaceForm.tsx     #   add/edit place sheet + AddPlaceHost (listens for savor:add-place); inline ratings
 │       │   ├── LookupCombobox.tsx#   name field + live debounced OSM suggestions (ARIA combobox)
@@ -80,7 +80,10 @@ sabor/
 │   ├── backup.ts                 # export / parseBackup / importBackup / summarizeBackup (JSON envelope)
 │   ├── useModalA11y.ts           # focus trap + Escape-to-close + body scroll-lock for overlays
 │   ├── useLongPress.ts           # long-press/hover-intent peek gesture (categories/[id]'s ranked rows)
-│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup) and lib/social/ (index, parse, pickUrl)
+│   ├── sheetDrag.ts              # pure drag-to-dismiss math — offset, velocity, thresholds
+│   ├── sheetParam.ts             # pure ?sheet= query-string helpers (withSheet/withoutSheet)
+│   ├── useSheetParam.ts          # URL-derived sheet state — pushState open / history.back close
+│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup, sheetDrag, sheetParam) and lib/social/ (index, parse, pickUrl)
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
@@ -192,6 +195,31 @@ path around the repo.
 - **Overlays use `Sheet` + `useModalA11y`.** Any modal/sheet renders inside
   `components/Sheet.tsx` (which wires `useModalA11y` for focus trap, Escape, and
   body scroll-lock). Sheets mount/unmount rather than toggling an `open` prop.
+- **Sheet open/closed state lives in `?sheet=<name>`, never in `useState`.** A sheet mounts
+  when the param is present, so the Android back gesture and the browser Back button close it
+  with no popstate listener of our own. Open with the **patched global**
+  `window.history.pushState` (never a captured reference, never before mount — an entry
+  missing Next's `__NA` marker causes a full page reload on Back). `useSheetParam` tracks per
+  instance, in a ref, whether *it* was the one that pushed: if so, close with
+  `window.history.back()`, so the entry is consumed and the stack stays balanced; if the param
+  arrived on the URL some other way (cold load before the strip runs, a client-side nav that
+  lands with `?sheet=` already set), close by `router.replace`-ing the param-free URL instead,
+  so closing never traverses an entry this instance didn't push. The param is ephemeral and
+  stripped once on cold load via `router.replace` (not `window.history.replaceState`, which is
+  invisible to `useSearchParams()` and would leave a sheet host believing it's still open).
+  **Never put an entity id in the query** — the owning
+  route already carries it in the path (`/places/[id]?sheet=edit`); a second id (which
+  category a score breakdown is for, a prefill payload) stays in local state. Any component
+  calling `useSheetParam` must sit inside a `<Suspense>` boundary or `next build` fails. A
+  delete-then-navigate path never calls `closeSheet()`: `history.back()` queues a traversal
+  that resolves against the history index at the time the queue drains, not when it was
+  called, so a synchronous `router.replace` right after it would land first and the deferred
+  `back()` would then resolve against the post-navigation index — landing on `?sheet=edit` for
+  an entity that no longer exists. Navigate with `router.replace` (not `push`, which would
+  stack a new entry instead of consuming the `?sheet=` one) and let the sheet unmount with the
+  route; see `CategoryForm.tsx`'s and `PlaceEditSheet`'s `handleDelete`.
+- **Destructive confirms use `ConfirmBox`.** Inline `role="alertdialog"` with a focus move —
+  not a stacked sheet, and not a bare coral div.
 - **Toast on failed writes.** Wrap repo writes in the UI and `toast(...)` on
   rejection so a failed save is never silent.
 - **Mobile-first, ≥44px touch targets.** Safe-area insets on fixed chrome,
@@ -217,3 +245,14 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   `schemaVersion` equality (see `lib/backup.ts`), so the moment `SCHEMA_VERSION`
   moves to 2, every v1 export becomes unimportable. Design and land a
   migration step (v1 → v2 → …) before that bump ships, not after.
+- **No automated e2e coverage for the `?sheet=` back-button path.** A manual browser pass at
+  the end of Phase 4 exercised Back, Forward, and navigating away with a sheet open (and
+  caught two real defects along the way — a `ConfirmBox` focus restore that was a no-op, and
+  a `?sheet=add` name collision — both fixed), but none of it is automated, so a future
+  regression here won't fail CI. Land them as Playwright specs when Phase 6 scaffolds
+  `@playwright/test` (a new devDependency — ask first).
+- **Drag-to-dismiss is untested on a real touch device.** `lib/sheetDrag.ts`'s thresholds
+  (`DISMISS_FRACTION`, `DISMISS_VELOCITY`) have unit-test coverage, but no one has dragged a
+  sheet with an actual finger on actual glass, and `prefers-reduced-motion` suppression
+  (`dragEnabled()`) has never been toggled at the OS level to confirm the gesture actually
+  turns off.

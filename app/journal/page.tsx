@@ -4,8 +4,9 @@
 // "Log a visit" entry point for the standalone (no fixed place) VisitForm flow. Visit-detail
 // links point at /places/[placeId] — that route lands in a later task.
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { usePlaces, useVisits } from "@/lib/hooks";
+import { useSheetParam } from "@/lib/useSheetParam";
 import type { Place, Visit } from "@/lib/types";
 import { EmptyState, HeaderShell, PlusGlyph } from "../components/ui";
 import VisitCard from "../components/visits/VisitCard";
@@ -63,7 +64,7 @@ function LogVisitButton({ onClick, className = "" }: { onClick: () => void; clas
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-sm bg-gold font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-sm bg-gold font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep ${className}`}
     >
       <PlusGlyph className="h-4 w-4" />
       Log a visit
@@ -72,9 +73,19 @@ function LogVisitButton({ onClick, className = "" }: { onClick: () => void; clas
 }
 
 export default function JournalPage() {
+  // useSheetParam() calls useSearchParams() — needs a Suspense boundary or `next build`
+  // fails. Same split as app/categories/[id]/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <JournalInner />
+    </Suspense>
+  );
+}
+
+function JournalInner() {
   const visits = useVisits();
   const places = usePlaces();
-  const [formOpen, setFormOpen] = useState(false);
+  const form = useSheetParam("visit");
 
   // Resolved once here (not per-card) — see VisitCard's comment on why it takes a plain
   // `placeName` string instead of calling usePlace() itself.
@@ -91,7 +102,7 @@ export default function JournalPage() {
       <HeaderShell
         title="Journal"
         action={
-          <LogVisitButton onClick={() => setFormOpen(true)} className="min-h-11 px-4 text-sm" />
+          <LogVisitButton onClick={form.openSheet} className="min-h-11 px-4 text-sm" />
         }
       />
 
@@ -101,7 +112,7 @@ export default function JournalPage() {
           title="Your journal is empty"
           hint="Your food journal starts here — log a visit"
         >
-          <LogVisitButton onClick={() => setFormOpen(true)} className="px-5 py-3 text-[0.95rem]" />
+          <LogVisitButton onClick={form.openSheet} className="px-5 py-3 text-[0.95rem]" />
         </EmptyState>
       ) : (
         <div className="px-4 pb-6">
@@ -128,7 +139,7 @@ export default function JournalPage() {
         </div>
       )}
 
-      <VisitForm open={formOpen} onClose={() => setFormOpen(false)} />
+      <VisitForm open={form.open} onClose={form.closeSheet} />
     </>
   );
 }

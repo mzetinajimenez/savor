@@ -66,7 +66,7 @@ export default function WeightsEditor({
           type="button"
           onClick={handleSave}
           disabled={saving || !criteria || criteria.length === 0}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -96,7 +96,7 @@ export default function WeightsEditor({
                     aria-label={`Decrease ${c.name} weight`}
                     onClick={() => bump(c.id, -1)}
                     disabled={value <= 0}
-                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-90 active:bg-ground-deep disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-30"
                   >
                     −
                   </button>
@@ -108,7 +108,7 @@ export default function WeightsEditor({
                     aria-label={`Increase ${c.name} weight`}
                     onClick={() => bump(c.id, 1)}
                     disabled={value >= 5}
-                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-90 active:bg-ground-deep disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-sm text-lg font-semibold text-gold transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-30"
                   >
                     +
                   </button>

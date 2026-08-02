@@ -210,7 +210,7 @@ export default function LookupCombobox({
                 role="option"
                 aria-selected={i === activeIndex}
                 onClick={() => choose(result)}
-                className={`min-h-11 cursor-pointer border-t border-rule px-1 py-2.5 transition active:scale-[0.99] ${
+                className={`min-h-11 cursor-pointer border-t border-rule px-1 py-2.5 transition-colors ${
                   i === activeIndex ? "bg-ground-deep" : "active:bg-ground-deep"
                 }`}
               >

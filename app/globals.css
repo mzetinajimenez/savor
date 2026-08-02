@@ -58,6 +58,9 @@
 html,
 body {
   height: 100%;
+  /* Overscroll never chains past the app: no rubber-band reveal of the page background on
+     iOS, no Android pull-to-refresh mid-scroll. Sheet.tsx contains its own body separately. */
+  overscroll-behavior-y: contain;
 }
 
 body {

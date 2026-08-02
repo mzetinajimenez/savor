@@ -11,6 +11,7 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { toast } from "@/app/components/Toast";
+import { ConfirmBox } from "@/app/components/ui";
 import {
   BackupValidationError,
   exportBackup,
@@ -107,7 +108,7 @@ export default function BackupPanel() {
           type="button"
           onClick={handleExport}
           disabled={busy || pending !== null}
-          className="min-h-11 flex-1 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {status === "exporting" ? "Exporting…" : "Export"}
         </button>
@@ -115,7 +116,7 @@ export default function BackupPanel() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={busy || pending !== null}
-          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
         >
           {status === "reading" ? "Reading…" : "Import"}
         </button>
@@ -130,29 +131,13 @@ export default function BackupPanel() {
       </div>
 
       {pending ? (
-        <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-          <p className="text-sm text-cream">
-            {`Replace everything in savor with this backup? Current data will be lost. Backup contains: ${summarizeBackup(pending)}`}
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPending(null)}
-              disabled={busy}
-              className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmImport}
-              disabled={busy}
-              className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
-            >
-              {status === "importing" ? "Restoring…" : "Replace data"}
-            </button>
-          </div>
-        </div>
+        <ConfirmBox
+          message={`Replace everything in savor with this backup? Current data will be lost. Backup contains: ${summarizeBackup(pending)}`}
+          confirmLabel={status === "importing" ? "Restoring…" : "Replace data"}
+          busy={busy}
+          onCancel={() => setPending(null)}
+          onConfirm={handleConfirmImport}
+        />
       ) : null}
     </div>
   );

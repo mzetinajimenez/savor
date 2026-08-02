@@ -4,7 +4,7 @@
 // display + local-interaction components. The visual language ("Supper Club"): bottle green
 // surfaces, cream ink, butter-gold seals, Bodoni Moda display, Archivo utility labels.
 
-import { useId, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type FormEvent, type ReactNode } from "react";
 import { formatScore } from "@/lib/ranking";
 import type { SocialPlatform } from "@/lib/social/types";
 
@@ -20,6 +20,12 @@ export interface PlacePrefill {
   sourceUrl?: string;
   sourcePlatform?: SocialPlatform;
   autoLookup?: boolean;
+  // Control flag, not form data: true when the caller is about to `router.replace` to a URL
+  // that already carries `?sheet=add` (only /import does this today). AddPlaceHost must record
+  // the prefill but skip its own pushState in that case — pushing here first would give the
+  // caller's replace only the just-pushed entry to overwrite, stranding the pre-navigation URL
+  // one entry below it in history instead of being cleanly replaced away.
+  deferOpen?: boolean;
 }
 
 export function emitAddPlace(prefill?: PlacePrefill) {
@@ -91,7 +97,7 @@ export function Chip({
       aria-pressed={active}
       // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual chip —
       // the extra height is invisible padding around the same compact px-3.5/py-1.5 label.
-      className={`${base} ${look} min-h-11 active:scale-95 ${
+      className={`${base} ${look} min-h-11 active:scale-[0.97] ${
         active ? "active:opacity-90" : "active:opacity-80"
       } ${className}`}
     >
@@ -136,7 +142,7 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
     <button
       type="button"
       onClick={() => emitAddPlace()}
-      className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep"
+      className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
     >
       <PlusGlyph className="h-4 w-4" />
       {label}
@@ -171,8 +177,8 @@ export function PasteLinkField({
   const canSubmit = value.trim().length > 0 && !submitting;
   const buttonClass =
     variant === "primary"
-      ? "min-h-11 w-full rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
-      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-95 active:bg-rule disabled:opacity-60";
+      ? "min-h-11 w-full rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule disabled:opacity-60";
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
@@ -296,7 +302,7 @@ export function RatingRow({
             aria-label={`${n} of 5`}
             tabIndex={selected || (current === 0 && n === 1) ? 0 : -1}
             onClick={() => onChange(selected ? null : n)}
-            className="grid h-11 w-11 place-items-center rounded-sm transition active:scale-90"
+            className="grid h-11 w-11 place-items-center rounded-sm transition active:scale-[0.97]"
           >
             <Bead filled={n <= current} size="md" />
           </button>
@@ -346,5 +352,95 @@ export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/* ─── ConfirmBox ────────────────────────────────────────────────────────────
+   The inline destructive-confirm step, shared by four call sites that each had their own
+   copy. `role="alertdialog"` (not just a coral div) is what tells a screen reader something
+   now needs a decision, and the focus move is what puts the reader inside it — without it
+   the box appears visually and silently, and the user's focus is still on a "Delete" button
+   that has just changed meaning. It is inline rather than an overlay on purpose: it is a
+   confirm STEP inside an open sheet, not a second sheet stacked on the first.
+
+   The focus move must be symmetric: on unmount (Cancel, or Confirm completing and the caller
+   flipping its confirming-state back off) focus has to return to whatever was focused before
+   the box appeared — otherwise it falls to <body>, and useModalA11y's Tab trap (which only
+   intervenes when the active element is the first/last focusable inside the sheet) never
+   fires, letting Tab escape into background chrome. Mirrors useModalA11y's own
+   previouslyFocused-on-unmount pattern (lib/useModalA11y.ts). */
+export function ConfirmBox({
+  message,
+  confirmLabel,
+  cancelLabel = "Cancel",
+  busy = false,
+  onCancel,
+  onConfirm,
+  className = "",
+}: {
+  message: ReactNode;
+  confirmLabel: string;
+  cancelLabel?: string;
+  busy?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  className?: string;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const messageId = useId();
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // The enclosing Sheet's dialog panel (rendered with tabIndex={-1}), used as a fallback
+    // restore target below.
+    const dialogPanel = boxRef.current?.closest('[role="dialog"]') as HTMLElement | null;
+    boxRef.current?.focus();
+    return () => {
+      // previouslyFocused is very often the trigger button that opened this box (e.g.
+      // "Delete place"), and that button is frequently swapped out for ConfirmBox in the
+      // very same commit — the two are branches of one ternary. Focusing a node React has
+      // already detached from the document is a silent no-op, so without this check focus
+      // falls through to <body> and the sheet's Tab trap in useModalA11y never re-engages.
+      // Restore to it only if it's still attached; otherwise fall back to the enclosing
+      // dialog panel so focus stays inside the trap. If neither exists (the two call sites
+      // that aren't inside a Sheet), do nothing rather than focus something arbitrary.
+      if (previouslyFocused?.isConnected) {
+        previouslyFocused.focus();
+      } else {
+        dialogPanel?.focus();
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={boxRef}
+      role="alertdialog"
+      aria-labelledby={messageId}
+      tabIndex={-1}
+      className={`flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5 outline-none ${className}`}
+    >
+      <p id={messageId} className="text-sm text-cream">
+        {message}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={busy}
+          className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
   );
 }

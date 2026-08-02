@@ -11,6 +11,7 @@ import { createCategory, deleteCategory, updateCategory } from "@/lib/repo";
 import type { Category } from "@/lib/types";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
+import { ConfirmBox } from "@/app/components/ui";
 
 // See WAVE-CONSTRAINTS.md's "standard input treatment" — every text input in this form shares
 // this exact class list so the app converges on one look.
@@ -84,8 +85,14 @@ export default function CategoryForm({
     try {
       await deleteCategory(category.id);
       toast("List deleted");
+      // Deliberately no onClose() here: closeSheet's history.back() is a queued traversal that
+      // resolves against whatever the history index is *when the queue drains*, not when it was
+      // called — a synchronous router navigation right after it would land first and the
+      // deferred back() would then resolve against the post-navigation index, landing on
+      // ?sheet=edit for an entity that no longer exists. Navigating away unmounts this sheet on
+      // its own; the caller must navigate with router.replace (not push) so the replace itself
+      // consumes the ?sheet= entry instead of stacking a new one on top of it.
       onDeleted?.();
-      onClose();
     } catch {
       toast("Couldn't delete that list — try again", true);
     } finally {
@@ -102,7 +109,7 @@ export default function CategoryForm({
           type="submit"
           form="category-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-95 active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -134,33 +141,18 @@ export default function CategoryForm({
         {mode === "edit" && category ? (
           <div className="mt-1 border-t border-rule pt-4">
             {confirmingDelete ? (
-              <div className="flex flex-col gap-3 rounded-sm bg-coral/10 p-3.5">
-                <p className="text-sm text-cream">
-                  Delete “{category.name}”? This can’t be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDelete(false)}
-                    className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-95 active:bg-ground-deep"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-95 disabled:opacity-50"
-                  >
-                    {deleting ? "Deleting…" : "Delete"}
-                  </button>
-                </div>
-              </div>
+              <ConfirmBox
+                message={<>Delete &ldquo;{category.name}&rdquo;? This can&rsquo;t be undone.</>}
+                confirmLabel={deleting ? "Deleting…" : "Delete"}
+                busy={deleting}
+                onCancel={() => setConfirmingDelete(false)}
+                onConfirm={handleDelete}
+              />
             ) : (
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:opacity-70"
+                className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
               >
                 Delete list
               </button>
