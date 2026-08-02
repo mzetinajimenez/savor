@@ -119,8 +119,11 @@ would push the origin toward a quota where it matters.
 Three safeguards, in decreasing order of importance:
 
 1. **Gate caching on `navigator.storage.persisted()`.** If persistence was not granted,
-   do not populate the tile cache. Offline tiles are a nice-to-have; the user's data is
-   not. This is the conservative variant and it is the decision.
+   do not populate the tile cache — reads still work, they just always go to the network.
+   Offline tiles are a nice-to-have; the user's data is not. This is the conservative
+   variant and it is the decision. The check is re-run on every mount of the map
+   component, not cached at startup: browsers can grant persistence later as engagement
+   heuristics are satisfied, and savor should start caching when that happens.
 2. **Enforce our own cap** (~40 MB, roughly 500 tiles) with LRU eviction, so savor never
    drifts near the browser's quota and never lets the browser decide what to drop.
 3. **Surface it in Settings** — `navigator.storage.estimate()` usage plus a "Clear map
@@ -141,6 +144,15 @@ the suggestions. The user picks one; `repo.updatePlace` writes `lat`, `lng`, `os
 the address fields. **Nothing is written without an explicit tap** — no silent
 auto-geocoding, because there is no UI to correct a wrong coordinate and a silent write
 would be permanent.
+
+Lookup can fail, and `searchPlaces()` returns a discriminated `LookupOutcome` precisely so
+that failure is not flattened into "no matches". The sheet distinguishes the three cases:
+a `network` / `upstream` / `invalid` failure shows the reason and offers retry; a
+successful search with an empty result says the venue wasn't found and leaves the place
+pinless; only a user tap on a suggestion writes.
+
+The sheet lists **only places with no coordinates**. Correcting a coordinate that exists
+but is wrong is a different problem with a different UI, and is out of scope (§10).
 
 This is the first path in savor that can set coordinates on an existing place, so it also
 retires the `PlaceForm.tsx:176-195` dead-end: editing a name still clears the location,
@@ -164,8 +176,10 @@ string, consistent with the Phase 4 convention.
 appears nowhere — it stays destructive-and-error only.
 
 **Selection:** tapping a pin raises a compact card above the nav (name, cuisine, score,
-status); tapping the card routes to `/places/[id]`. Deliberately not a `Sheet` — `Sheet`
-is modal and traps focus, which is wrong for something tapped while panning.
+status); tapping the card routes to `/places/[id]`. Tapping the map background, or the
+card's close control, deselects; panning does not. At most one place is selected at a
+time. Deliberately not a `Sheet` — `Sheet` is modal and traps focus, which is wrong for
+something tapped while panning.
 
 **Locate:** a button that requests geolocation on tap only, never on load. The position is
 never persisted.
@@ -224,9 +238,27 @@ and on the detail header. It is not dismissible.
 Marker clustering (dozens of places, not thousands — revisit when it is measurably slow).
 Service worker and offline app shell. Directions or routing. Tap-the-map-to-create-a-place
 reverse geocoding. Manual lat/lng entry, since **Find location** covers the same need with
-better data. Any change to the backup format.
+better data. Correcting a coordinate that already exists but is wrong. Any change to the
+backup format.
 
-## 11. Open items
+## 11. Delivery order
+
+This is more than one implementation plan's worth of work, and the two halves have a clean
+seam: the first is useless without tiles, the second is useless without the first.
+
+**Stage 1 — the map exists.** Tile source and origin-restricted key, `lib/mapBounds.ts`,
+the lazy-loaded MapLibre component, the List/Map toggle and `?view=map`, pins, selection
+card, locate button, attribution. Ships a working map for every place that already has
+coordinates, and is independently valuable.
+
+**Stage 2 — the map is complete and safe.** `lib/tileCache.ts` and the persistence-gated
+cache, the Settings usage readout and "Clear map cache", the pinless-places footer and the
+**Find location** flow, and the place-detail header.
+
+Stage 1 deliberately carries no tile cache: until §4.2's safeguards exist, savor should
+not be writing tiles to an origin it shares with the user's data.
+
+## 12. Open items
 
 - **Protomaps account and origin-restricted key** must be created, and the production
   origin registered, before the map renders anywhere but localhost. Local development is
