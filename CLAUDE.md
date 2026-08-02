@@ -46,9 +46,9 @@ sabor/
 │   ├── settings/page.tsx         # "/settings" tab — criteria editor + backup panel
 │   ├── api/lookup/route.ts       # GET /api/lookup?q= — Node-runtime Photon (OSM) proxy; owns the User-Agent
 │   └── components/
-│       ├── AppInit.tsx           # renders null; runs useDbInit() exactly once (seed + request persistent storage)
+│       ├── AppInit.tsx           # renders null; runs useDbInit() exactly once (seed + request persistent storage) + useStripSheetParamOnLoad()
 │       ├── BottomNav.tsx         # fixed 4-tab nav + elevated ember "+" FAB (dispatches savor:add-place)
-│       ├── Sheet.tsx             # overlay shell: bottom-sheet ≤sm / centered modal ≥sm; h-dvh; backdrop-close; useModalA11y
+│       ├── Sheet.tsx             # overlay shell: bottom-sheet ≤sm / centered modal ≥sm; h-dvh; backdrop-close; drag-to-dismiss; useModalA11y
 │       ├── Toast.tsx             # toast() module-level pub/sub + <Toaster/> (no context)
 │       ├── ui.tsx                # presentational primitives — HeaderShell, Chip, EmptyState, ScoreBadge, RatingRow, ConfirmBox, glyphs
 │       ├── places/
@@ -241,10 +241,9 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   migration step (v1 → v2 → …) before that bump ships, not after.
 - **e2e coverage for the `?sheet=` back-button path.** The `__NA` reload trap means Back,
   Forward, and navigating away with a sheet open each need a real browser assertion, and
-  Phase 4 verified them by hand. Land them as Playwright specs when Phase 6 scaffolds
-  `@playwright/test` (a new devDependency — ask first).
+  Phase 4 never exercised them in a browser (see below). Land them as Playwright specs when
+  Phase 6 scaffolds `@playwright/test` (a new devDependency — ask first).
 - **Phase 4's browser verification is outstanding.** Every implementation task's browser
   check was blocked by a locked automation profile, so drag-to-dismiss, the Back-does-not-
   reload assertion, the delete flows, and `ConfirmBox`'s focus behavior have been verified by
-  code review and the unit/build/lint suite only, never in a real browser. Run through them by
-  hand (or via the Playwright specs above, once they exist) before trusting this phase fully.
+  code review and the unit/build/lint suite only, never in a real browser.
