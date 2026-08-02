@@ -355,7 +355,14 @@ export function LinkGlyph({ className = "h-4 w-4" }: { className?: string }) {
    now needs a decision, and the focus move is what puts the reader inside it — without it
    the box appears visually and silently, and the user's focus is still on a "Delete" button
    that has just changed meaning. It is inline rather than an overlay on purpose: it is a
-   confirm STEP inside an open sheet, not a second sheet stacked on the first. */
+   confirm STEP inside an open sheet, not a second sheet stacked on the first.
+
+   The focus move must be symmetric: on unmount (Cancel, or Confirm completing and the caller
+   flipping its confirming-state back off) focus has to return to whatever was focused before
+   the box appeared — otherwise it falls to <body>, and useModalA11y's Tab trap (which only
+   intervenes when the active element is the first/last focusable inside the sheet) never
+   fires, letting Tab escape into background chrome. Mirrors useModalA11y's own
+   previouslyFocused-on-unmount pattern (lib/useModalA11y.ts). */
 export function ConfirmBox({
   message,
   confirmLabel,
@@ -377,7 +384,11 @@ export function ConfirmBox({
   const messageId = useId();
 
   useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
     boxRef.current?.focus();
+    return () => {
+      previouslyFocused?.focus();
+    };
   }, []);
 
   return (
