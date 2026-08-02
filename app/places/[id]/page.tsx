@@ -12,11 +12,12 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { useCategories, useCriteria, usePlace, useVisits } from "@/lib/hooks";
 import { compositeScore } from "@/lib/ranking";
 import { deletePlace, updatePlace } from "@/lib/repo";
 import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
+import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
 import { Chip, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
@@ -49,6 +50,17 @@ function formatVisitDate(dateStr: string): string {
 }
 
 export default function PlaceDetailPage() {
+  // useSheetParam() calls useSearchParams(), which makes this route dynamic and requires a
+  // Suspense boundary around its caller or `next build` fails — same split as
+  // app/categories/[id]/page.tsx and app/import/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <PlaceDetailInner />
+    </Suspense>
+  );
+}
+
+function PlaceDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const place = usePlace(id);
@@ -56,10 +68,15 @@ export default function PlaceDetailPage() {
   const criteria = useCriteria();
   const visits = useVisits(id);
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [ratingEditorOpen, setRatingEditorOpen] = useState(false);
-  const [visitFormOpen, setVisitFormOpen] = useState(false);
+  const edit = useSheetParam("edit");
+  const ratings = useSheetParam("ratings");
+  const visit = useSheetParam("visit");
+  const score = useSheetParam("score");
   const [statusPending, setStatusPending] = useState(false);
+  // Which category the breakdown is for. Deliberately NOT in the query — the route already
+  // owns an id (the place), and a second entity id in the URL is exactly what the sheet-param
+  // convention rules out. `score.open` is the source of truth for whether it shows; this is
+  // only the argument. When Back clears the param the sheet unmounts and this goes unread.
   const [breakdownCategoryId, setBreakdownCategoryId] = useState<string | null>(null);
 
   // Belt-and-suspenders with hooks.ts's own tombstone filter (matches app/page.tsx's identical
@@ -108,7 +125,7 @@ export default function PlaceDetailPage() {
     try {
       await updatePlace(currentPlace.id, { status: next });
       // Marking a want_to_try place as been is the "rate it now" moment — open the editor.
-      if (next === "been") setRatingEditorOpen(true);
+      if (next === "been") ratings.openSheet();
     } catch {
       toast("Couldn't update status", true);
     } finally {
@@ -132,7 +149,7 @@ export default function PlaceDetailPage() {
       <HeaderShell
         title={place.name}
         action={
-          <button type="button" onClick={() => setEditOpen(true)} className={actionButtonClass}>
+          <button type="button" onClick={edit.openSheet} className={actionButtonClass}>
             Edit
           </button>
         }
@@ -176,15 +193,21 @@ export default function PlaceDetailPage() {
             {place.categoryIds.map((categoryId) => {
               const category = categories.find((c) => c.id === categoryId);
               if (!category) return null;
-              const score = compositeScore(place.ratings, category.weights, liveCriterionIds);
-              if (score === null) return null;
+              const placeScore = compositeScore(place.ratings, category.weights, liveCriterionIds);
+              if (placeScore === null) return null;
               return (
-                <Chip key={categoryId} onClick={() => setBreakdownCategoryId(categoryId)}>
+                <Chip
+                  key={categoryId}
+                  onClick={() => {
+                    setBreakdownCategoryId(categoryId);
+                    score.openSheet();
+                  }}
+                >
                   <span className="mr-1">
                     {category.emoji ? `${category.emoji} ` : ""}
                     {category.name}
                   </span>
-                  <ScoreBadge score={score} size="sm" />
+                  <ScoreBadge score={placeScore} size="sm" />
                 </Chip>
               );
             })}
@@ -197,7 +220,7 @@ export default function PlaceDetailPage() {
           <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Ratings</h2>
           <button
             type="button"
-            onClick={() => setRatingEditorOpen(true)}
+            onClick={ratings.openSheet}
             className={goldButtonClass}
           >
             Edit ratings
@@ -247,7 +270,7 @@ export default function PlaceDetailPage() {
           <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Visits</h2>
           <button
             type="button"
-            onClick={() => setVisitFormOpen(true)}
+            onClick={visit.openSheet}
             className={goldButtonClass}
           >
             <PlusGlyph className="h-4 w-4" />
@@ -281,27 +304,25 @@ export default function PlaceDetailPage() {
         )}
       </section>
 
-      {editOpen ? (
+      {edit.open ? (
         <PlaceEditSheet
           place={place}
-          onClose={() => setEditOpen(false)}
+          onClose={edit.closeSheet}
           onDeleted={() => router.push("/")}
         />
       ) : null}
 
-      {ratingEditorOpen ? (
-        <RatingEditor place={place} onClose={() => setRatingEditorOpen(false)} />
-      ) : null}
+      {ratings.open ? <RatingEditor place={place} onClose={ratings.closeSheet} /> : null}
 
-      <VisitForm open={visitFormOpen} onClose={() => setVisitFormOpen(false)} placeId={place.id} />
+      <VisitForm open={visit.open} onClose={visit.closeSheet} placeId={place.id} />
 
-      {breakdownCategoryId && categories !== undefined && criteria !== undefined ? (
+      {score.open && breakdownCategoryId && categories !== undefined && criteria !== undefined ? (
         <ScoreBreakdownSheet
           place={currentPlace}
           categoryId={breakdownCategoryId}
           categories={categories}
           criteria={criteria}
-          onClose={() => setBreakdownCategoryId(null)}
+          onClose={score.closeSheet}
         />
       ) : null}
     </>
@@ -354,8 +375,8 @@ function PlaceEditSheet({
     try {
       await deletePlace(place.id);
       toast("Place deleted");
-      onDeleted();
       onClose();
+      onDeleted();
     } catch {
       toast("Couldn't delete that place — try again", true);
       setDeleting(false);
