@@ -71,7 +71,12 @@ export default function Sheet({
     setDragging(false);
     const height = panelRef.current?.offsetHeight ?? 0;
     const finalOffset = dragOffset(state.startY, e.clientY);
-    if (shouldDismiss({ offset: finalOffset, height, velocity: state.velocity })) {
+    // Recompute velocity from this release event rather than trusting state.velocity, which is
+    // only ever written in handlePointerMove — a fast flick followed by a stall (finger held
+    // still before lifting) leaves it stuck at the last pre-stall sample, wrongly tripping the
+    // velocity branch below on what is now a slow release.
+    const velocity = dragVelocity(e.clientY - state.lastY, e.timeStamp - state.lastT);
+    if (shouldDismiss({ offset: finalOffset, height, velocity })) {
       onClose();
       return;
     }
