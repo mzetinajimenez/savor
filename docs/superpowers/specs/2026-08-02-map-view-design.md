@@ -1,7 +1,7 @@
 # Map view — Design Spec
 
 **Date:** 2026-08-02
-**Status:** Approved pending user review
+**Status:** Approved
 **Repo:** git@github.com:mzetinajimenez/savor.git
 
 ## 1. Problem
