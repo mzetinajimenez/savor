@@ -385,9 +385,24 @@ export function ConfirmBox({
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    // The enclosing Sheet's dialog panel (rendered with tabIndex={-1}), used as a fallback
+    // restore target below.
+    const dialogPanel = boxRef.current?.closest('[role="dialog"]') as HTMLElement | null;
     boxRef.current?.focus();
     return () => {
-      previouslyFocused?.focus();
+      // previouslyFocused is very often the trigger button that opened this box (e.g.
+      // "Delete place"), and that button is frequently swapped out for ConfirmBox in the
+      // very same commit — the two are branches of one ternary. Focusing a node React has
+      // already detached from the document is a silent no-op, so without this check focus
+      // falls through to <body> and the sheet's Tab trap in useModalA11y never re-engages.
+      // Restore to it only if it's still attached; otherwise fall back to the enclosing
+      // dialog panel so focus stays inside the trap. If neither exists (the two call sites
+      // that aren't inside a Sheet), do nothing rather than focus something arbitrary.
+      if (previouslyFocused?.isConnected) {
+        previouslyFocused.focus();
+      } else {
+        dialogPanel?.focus();
+      }
     };
   }, []);
 
