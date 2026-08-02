@@ -199,9 +199,15 @@ path around the repo.
   when the param is present, so the Android back gesture and the browser Back button close it
   with no popstate listener of our own. Open with the **patched global**
   `window.history.pushState` (never a captured reference, never before mount — an entry
-  missing Next's `__NA` marker causes a full page reload on Back); close with
-  `window.history.back()`, so the entry is consumed and the stack stays balanced. The param is
-  ephemeral and stripped on cold load. **Never put an entity id in the query** — the owning
+  missing Next's `__NA` marker causes a full page reload on Back). `useSheetParam` tracks per
+  instance, in a ref, whether *it* was the one that pushed: if so, close with
+  `window.history.back()`, so the entry is consumed and the stack stays balanced; if the param
+  arrived on the URL some other way (cold load before the strip runs, a client-side nav that
+  lands with `?sheet=` already set), close by `router.replace`-ing the param-free URL instead,
+  so closing never traverses an entry this instance didn't push. The param is ephemeral and
+  stripped once on cold load via `router.replace` (not `window.history.replaceState`, which is
+  invisible to `useSearchParams()` and would leave a sheet host believing it's still open).
+  **Never put an entity id in the query** — the owning
   route already carries it in the path (`/places/[id]?sheet=edit`); a second id (which
   category a score breakdown is for, a prefill payload) stays in local state. Any component
   calling `useSheetParam` must sit inside a `<Suspense>` boundary or `next build` fails. A
