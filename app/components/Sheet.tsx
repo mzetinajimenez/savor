@@ -39,7 +39,7 @@ export default function Sheet({
   }, []);
 
   function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    if (e.pointerType === "mouse" || !dragEnabled()) return;
+    if (e.pointerType === "mouse" || !dragEnabled() || drag.current) return;
     drag.current = { startY: e.clientY, lastY: e.clientY, lastT: e.timeStamp, velocity: 0 };
     setDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
