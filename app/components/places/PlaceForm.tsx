@@ -78,6 +78,17 @@ function emptyForm(initial?: PlacePrefill) {
 export function AddPlaceHost() {
   const { open, openSheet, closeSheet } = useSheetParam("add");
   const [prefill, setPrefill] = useState<PlacePrefill | undefined>(undefined);
+  // Tracks `open` as of the last render so the reset below runs exactly once per close, as a
+  // render-phase state adjustment rather than an effect (see React's "adjusting state when a
+  // prop changes" — a setState here is fine because it's conditioned on a value actually
+  // changing since the last render, so it can't cascade).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    // Sheet just closed: drop any held prefill so a stale Back-then-Forward can't resurrect a
+    // previous import's sourceUrl into a sheet that looks freshly opened.
+    if (!open) setPrefill(undefined);
+  }
 
   useEffect(() => {
     function handleOpen(e: Event) {
@@ -92,6 +103,11 @@ export function AddPlaceHost() {
     }
     window.addEventListener(ADD_PLACE_EVENT, handleOpen);
     return () => window.removeEventListener(ADD_PLACE_EVENT, handleOpen);
+    // No dependency array on purpose: openSheet/closeSheet are recreated each render (they
+    // close over `open`, which useSheetParam derives fresh from useSearchParams()). A `[]`
+    // closure would capture this render's `open` — and thus this render's openSheet — forever,
+    // so a handleOpen firing after the sheet had already been opened once would still see
+    // `open: false` and pushState a second, redundant ?sheet=add entry.
   });
 
   // Mounted only while open, so every fresh open gets a fresh AddPlaceSheet instance (and thus
