@@ -141,3 +141,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* MapLibre chrome in Supper Club tokens. The attribution is NOT dismissible — ODbL requires
+   it visible, the same obligation savor already carries for Photon. Restyled, never hidden. */
+.maplibregl-ctrl-attrib {
+  background: var(--color-ground-deep);
+  color: var(--color-cream);
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--color-cream);
+  text-decoration: underline;
+}
