@@ -19,6 +19,7 @@ import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION } from "@/lib/mapStyle";
 import { cameraFor, partitionByCoords } from "@/lib/mapBounds";
 import { compositeScore } from "@/lib/ranking";
 import type { Place } from "@/lib/types";
+import { toast } from "../Toast";
 import MapPin from "./MapPin";
 import MapSelectionCard from "./MapSelectionCard";
 
@@ -82,6 +83,69 @@ export default function PlacesMap({
   // Mirrors markersRef's containers into React state so render can createPortal into each one.
   // Only reassigned by the reconciliation effect, never read by it.
   const [markerEls, setMarkerEls] = useState<{ id: string; container: HTMLDivElement }[]>([]);
+
+  // The "locate me" pin — at most one, created lazily on first successful fix and reused (just
+  // re-positioned) on any later tap, mirroring the pinned-places reconciliation above but for a
+  // single marker rather than a keyed collection. Its coordinates live ONLY here, in this ref
+  // plus the marker's own internal LngLat — never written to Dexie, localStorage, or the URL, and
+  // gone the instant this component unmounts (see the cleanup effect below). `geoMarkerEl`
+  // mirrors the container into React state so render can createPortal the dot into it, same
+  // reason `markerEls` exists for pins.
+  const geoMarkerRef = useRef<{ marker: Marker; container: HTMLDivElement } | null>(null);
+  const [geoMarkerEl, setGeoMarkerEl] = useState<HTMLDivElement | null>(null);
+
+  // Tap-only: this is the ONLY call site for getCurrentPosition in this file. No effect above or
+  // below may call it — a permission prompt on page load, before the user has asked to be
+  // located, is the exact thing ADR §6 forbids.
+  const [locating, setLocating] = useState(false);
+
+  function handleLocate() {
+    const map = mapRef.current;
+    if (!map || locating) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          map.easeTo({ center: [longitude, latitude], zoom: 14 });
+          const existing = geoMarkerRef.current;
+          if (existing) {
+            existing.marker.setLngLat([longitude, latitude]);
+          } else {
+            const container = document.createElement("div");
+            const marker = new Marker({ element: container, anchor: "center" })
+              .setLngLat([longitude, latitude])
+              .addTo(map);
+            geoMarkerRef.current = { marker, container };
+            setGeoMarkerEl(container);
+          }
+        } finally {
+          setLocating(false);
+        }
+      },
+      () => {
+        // Permission denied, timeout, and position-unavailable all land here undistinguished —
+        // the browser's own permission UI already explained a denial, and the user doesn't need
+        // savor to re-explain which of the three happened.
+        try {
+          toast("Couldn't get your location", true);
+        } finally {
+          setLocating(false);
+        }
+      }
+    );
+  }
+
+  // Unmount-only teardown for the geo marker, mirroring the pinned-markers cleanup effect below
+  // but scoped to this one optional marker. `[]` deps: this must run exactly once, on unmount,
+  // not every time geoMarkerRef's contents change (it never changes identity after creation
+  // anyway — see handleLocate, which mutates the existing marker rather than replacing it).
+  useEffect(() => {
+    return () => {
+      geoMarkerRef.current?.marker.remove();
+      geoMarkerRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     // Fresh read, not the outer `style`/`key` closure — this effect has `[]` deps (see below)
@@ -292,6 +356,20 @@ export default function PlacesMap({
   return (
     <div className={CONTAINER_CLASS}>
       <div ref={containerRef} className="h-full w-full" />
+      {/* Feature-detected: absent in older/locked-down browsers and some in-app webviews — the
+          button simply doesn't render rather than existing to fail. Positioned top-right, clear
+          of MapSelectionCard which anchors to the bottom. */}
+      {typeof navigator !== "undefined" && navigator.geolocation ? (
+        <button
+          type="button"
+          aria-label="Show my location"
+          onClick={handleLocate}
+          disabled={locating}
+          className="absolute right-3 top-3 z-10 grid min-h-11 min-w-11 place-items-center rounded-sm border border-rule bg-raised text-cream transition active:scale-[0.97] disabled:opacity-60"
+        >
+          <CrosshairGlyph className={`h-5 w-5 ${locating ? "animate-pulse" : ""}`} />
+        </button>
+      ) : null}
       {pinned.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
           <p className="rounded-sm bg-ground-deep/90 px-4 py-2 text-sm text-cream">
@@ -319,6 +397,32 @@ export default function PlacesMap({
           onClose={() => setSelectedId(null)}
         />
       ) : null}
+      {/* The user's own position — a solid cream dot, distinct from both the filled-gold `been`
+          seal and the hollow-cream-ring `want_to_try` pin (MapPin). Non-interactive (no tap
+          target, no accessible name): it marks a spot, it isn't a place to select. */}
+      {geoMarkerEl
+        ? createPortal(
+            <span
+              aria-hidden
+              className="block h-3.5 w-3.5 rounded-full bg-cream shadow-[0_0_0_3px_var(--color-ground),0_2px_6px_rgba(0,0,0,0.4)]"
+            />,
+            geoMarkerEl
+          )
+        : null}
     </div>
+  );
+}
+
+function CrosshairGlyph({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <circle cx="12" cy="12" r="6.5" stroke="currentColor" strokeWidth={1.75} />
+      <path
+        d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
