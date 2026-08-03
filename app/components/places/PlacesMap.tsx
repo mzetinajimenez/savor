@@ -13,10 +13,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 // maplibre-gl v6 ships no default export (ESM-only named exports) — import the pieces used
 // directly rather than a `maplibregl` namespace default that doesn't exist.
+import * as maplibregl from "maplibre-gl";
 import { AttributionControl, Map as MapLibreMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION } from "@/lib/mapStyle";
 import { cameraFor, partitionByCoords } from "@/lib/mapBounds";
+import { registerTileProtocol, TILE_SCHEME } from "@/lib/tileCacheStore";
 import { compositeScore } from "@/lib/ranking";
 import type { Place } from "@/lib/types";
 import { toast } from "../Toast";
@@ -43,7 +45,7 @@ export default function PlacesMap({
   // once per mount, matching LookupCombobox.tsx's session-ref pattern, not respond to a
   // recomputed style object's identity).
   const key = protomapsApiKey();
-  const style = mapStyle(key);
+  const style = mapStyle(key, { scheme: TILE_SCHEME });
 
   // Set when maplibregl.Map's constructor throws (e.g. no WebGL — private browsing, some
   // in-app browsers). A broken tile path must never look like a blank map; this folds the
@@ -160,8 +162,16 @@ export default function PlacesMap({
     // Fresh read, not the outer `style`/`key` closure — this effect has `[]` deps (see below)
     // so it must not implicitly depend on anything from render scope that could theoretically
     // change; recomputing here keeps that true regardless.
-    const style = mapStyle(protomapsApiKey());
+    const style = mapStyle(protomapsApiKey(), { scheme: TILE_SCHEME });
     if (!style || !containerRef.current) return;
+
+    // Persistence is re-checked on every mount, never cached: a browser can grant it later as
+    // engagement heuristics are satisfied, and savor should start caching when that happens.
+    // Registering the protocol is cheap and unconditional — the HANDLER decides whether to
+    // store, so a not-yet-persisted origin still gets tiles, just always from the network.
+    // registerTileProtocol no-ops after its first call for the page (see its own comment), so
+    // calling it again on every remount — including React Strict Mode's double-invoke — is safe.
+    registerTileProtocol(maplibregl);
 
     // The map instance lives in this ref and is created AND destroyed by THIS SAME effect —
     // never a useMemo paired with a separately-scoped cleanup effect, and never re-created by a
