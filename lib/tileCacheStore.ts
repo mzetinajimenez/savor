@@ -230,7 +230,13 @@ export async function tileCacheUsage(): Promise<{ bytes: number; count: number }
  * reset-everything path on the theory that it's "another thing to clear along the way".
  */
 export async function clearTileCache(): Promise<void> {
-  await caches.delete(TILE_CACHE_NAME);
+  if (typeof caches === "undefined") return;
+  try {
+    await caches.delete(TILE_CACHE_NAME);
+  } catch {
+    // Degrade silently, same as every other Cache API call in this file — a user-initiated
+    // "Clear map cache" button (Task 10) must never surface an unhandled rejection.
+  }
 }
 
 // MAX_TILE_BYTES is re-exported only so callers that want to display the cap (Task 10's panel)
