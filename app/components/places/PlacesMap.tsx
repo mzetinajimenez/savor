@@ -1,7 +1,12 @@
 "use client";
 
-// PlacesMap — the ONLY module in savor that may import maplibre-gl. Everything else that needs
-// a map imports MapView (the lazy, SSR-disabled shell around this file).
+// PlacesMap — one of exactly two modules in savor that may import maplibre-gl directly: this one
+// (the interactive Places-tab map) and app/components/places/PlaceHeaderMapCanvas.tsx (the
+// decorative, non-interactive place-detail header map). Both share lib/mapStyle.ts and
+// lib/tileCacheStore.ts as their common source of truth for the basemap and the tile cache, so
+// the two surfaces can't drift apart. Nothing else in the app should import maplibre-gl —
+// everything that needs a map imports MapView (the lazy, SSR-disabled shell around this file) or
+// PlaceHeaderMap (the equivalent shell around PlaceHeaderMapCanvas.tsx).
 //
 // Task 3 laid the canvas, the camera, the attribution, and the no-key state. Task 5 (this pass)
 // adds pins — one maplibregl.Marker per pinned place, whose element is a bare
