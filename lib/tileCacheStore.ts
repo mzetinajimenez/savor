@@ -37,6 +37,13 @@ export const TILE_SCHEME = "savor-tiles";
  *  entry, and the cached Response itself is the only place that survives a page reload. */
 const LAST_USED_HEADER = "x-savor-last-used";
 
+/** Header a cached Response is stamped with on write, holding its byte length as a string.
+ *  `currentEntries` reads this instead of calling `.clone().arrayBuffer()` on every entry on
+ *  every store — that would mean re-reading every cached tile's full body just to compute sizes
+ *  for LRU eviction, real memory churn on a phone during heavy panning. A pre-existing entry
+ *  written before this header existed falls back to a body read (see `currentEntries`). */
+const BYTE_LENGTH_HEADER = "x-savor-byte-length";
+
 /**
  * Whether tile writes to Cache Storage are currently allowed.
  *
@@ -145,7 +152,15 @@ async function touchLastUsed(key: string, bytes: ArrayBuffer): Promise<void> {
   if (!(await cacheEnabled())) return;
   try {
     const cache = await caches.open(TILE_CACHE_NAME);
-    await cache.put(key, new Response(bytes, { headers: { [LAST_USED_HEADER]: String(Date.now()) } }));
+    await cache.put(
+      key,
+      new Response(bytes, {
+        headers: {
+          [LAST_USED_HEADER]: String(Date.now()),
+          [BYTE_LENGTH_HEADER]: String(bytes.byteLength),
+        },
+      })
+    );
   } catch {
     // QuotaExceededError or any other Cache API failure — degrade silently, the map doesn't
     // depend on this succeeding.
@@ -168,7 +183,12 @@ async function storeInCache(key: string, bytes: ArrayBuffer): Promise<void> {
     }
     await cache.put(
       key,
-      new Response(bytes, { headers: { [LAST_USED_HEADER]: String(Date.now()) } })
+      new Response(bytes, {
+        headers: {
+          [LAST_USED_HEADER]: String(Date.now()),
+          [BYTE_LENGTH_HEADER]: String(bytes.byteLength),
+        },
+      })
     );
   } catch {
     // Covers QuotaExceededError and any other Cache API failure. Storing a tile is a
@@ -176,11 +196,16 @@ async function storeInCache(key: string, bytes: ArrayBuffer): Promise<void> {
   }
 }
 
-/** Enumerates the cache's current contents as CacheEntry[] for selectEvictions — bytes come
- *  from each Response's real body length, `lastUsed` from the header stamped on write (0, i.e.
- *  "oldest", if a pre-existing entry somehow lacks it). Any failure enumerating returns an empty
- *  array, which just means eviction proceeds as if the cache were empty (selectEvictions itself
- *  is safe to call with []). */
+/** Enumerates the cache's current contents as CacheEntry[] for selectEvictions — `bytes` comes
+ *  from the `x-savor-byte-length` header stamped on write, `lastUsed` from `x-savor-last-used`
+ *  (0, i.e. "oldest", if a pre-existing entry somehow lacks it). Reading the header avoids a
+ *  `.clone().arrayBuffer()` body read per entry on every store call, which would mean re-reading
+ *  every cached tile's full response body just to size it — real memory churn on a phone during
+ *  heavy panning. A legacy entry written before the byte-length header existed (or one whose
+ *  header is somehow unparseable) falls back to a body read so eviction sizing stays correct
+ *  rather than treating it as zero-sized and never evicting it. Any failure enumerating returns
+ *  an empty array, which just means eviction proceeds as if the cache were empty (selectEvictions
+ *  itself is safe to call with []). */
 async function currentEntries(cache: Cache): Promise<CacheEntry[]> {
   try {
     const requests = await cache.keys();
@@ -188,11 +213,15 @@ async function currentEntries(cache: Cache): Promise<CacheEntry[]> {
       requests.map(async (request) => {
         const response = await cache.match(request);
         if (!response) return null;
-        const buf = await response.clone().arrayBuffer();
         const lastUsedHeader = response.headers.get(LAST_USED_HEADER);
+        const byteLengthHeader = response.headers.get(BYTE_LENGTH_HEADER);
+        const parsedBytes = byteLengthHeader ? Number(byteLengthHeader) : NaN;
+        const bytes = Number.isFinite(parsedBytes)
+          ? parsedBytes
+          : (await response.clone().arrayBuffer()).byteLength;
         const entry: CacheEntry = {
           key: request.url,
-          bytes: buf.byteLength,
+          bytes,
           lastUsed: lastUsedHeader ? Number(lastUsedHeader) : 0,
         };
         return entry;

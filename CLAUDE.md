@@ -242,11 +242,13 @@ path around the repo.
   view you switch to and stay in. An unrecognised value falls back to the default view. The
   param survives the cold-load `?sheet=` strip (`withoutSheet` preserves every other param), so
   `/?view=map&sheet=add` reloads as `/?view=map`.
-- **MapLibre is imported in exactly one module.** `app/components/places/PlacesMap.tsx` is the
-  only file that may import `maplibre-gl`; everything else goes through
-  `app/components/places/MapView.tsx`'s `next/dynamic({ ssr: false })` boundary, so no other
-  route pays for the ~281 KB chunk. The basemap style is defined once in `lib/mapStyle.ts` and
-  shared by the map tab and the place-detail header, so the two cannot drift.
+- **MapLibre is imported in exactly two modules.** `app/components/places/PlacesMap.tsx` (the
+  interactive Places-tab map) and `app/components/places/PlaceHeaderMapCanvas.tsx` (the
+  decorative, non-interactive place-detail header map) are the only files that may import
+  `maplibre-gl`; everything else goes through `MapView.tsx` / `PlaceHeaderMap.tsx`'s
+  `next/dynamic({ ssr: false })` boundaries, so no other route pays for the ~281 KB chunk. The
+  basemap style is defined once in `lib/mapStyle.ts` and shared by the map tab and the
+  place-detail header, so the two cannot drift.
 - **The map partitions the list's result; it never runs its own query.** The map consumes the
   same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
   query is the bug commit `393cdfe` fixed for category city chips.

@@ -1,12 +1,15 @@
 "use client";
 
-// The only module PlaceHeaderMap's maplibre-gl mount lives in — the header-map counterpart to
-// PlacesMap.tsx ("the ONLY module in savor that may import maplibre-gl itself" for the Places
-// tab). Loaded through next/dynamic from PlaceHeaderMap.tsx, itself gated behind
-// requestIdleCallback there, so this file — and the maplibre-gl chunk it pulls in (shared with
-// the Places tab; same webpack module, fetched once per user per deploy) — never sits on place
-// detail's critical path. See app/components/places/PlaceHeaderMap.tsx for the idle gate, the
-// reserved-height container, the aria-hidden boundary, and the scrim.
+// One of exactly two modules in savor that may import maplibre-gl directly: this one (the
+// decorative, non-interactive place-detail header map) and app/components/places/PlacesMap.tsx
+// (the interactive Places-tab map). Both share lib/mapStyle.ts and lib/tileCacheStore.ts as
+// their common source of truth for the basemap and the tile cache, so the two surfaces can't
+// drift apart. Nothing else should import maplibre-gl directly. Loaded through next/dynamic
+// from PlaceHeaderMap.tsx, itself gated behind requestIdleCallback there, so this file — and
+// the maplibre-gl chunk it pulls in (shared with the Places tab; same webpack module, fetched
+// once per user per deploy) — never sits on place detail's critical path. See
+// app/components/places/PlaceHeaderMap.tsx for the idle gate, the reserved-height container,
+// the aria-hidden boundary, and the scrim.
 //
 // Non-interactive by construction: `interactive: false` disables every drag/zoom/rotate/pinch
 // handler inside MapLibre itself (there is no separate "ignore gestures" logic to write here),

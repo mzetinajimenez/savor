@@ -30,12 +30,11 @@ import { toast } from "../Toast";
 import MapPin from "./MapPin";
 import MapSelectionCard from "./MapSelectionCard";
 
-// Clears the sticky HeaderShell above (title-only, no filter row: ~4.25rem including its
-// safe-area top inset) and the fixed BottomNav + FAB overhang below (the same 8rem the page
-// body's <main> already reserves in app/layout.tsx). This is a standalone estimate — Task 4
-// mounts this inside the actual Places-tab frame and is the place to true it up against the
-// real rendered header height if it turns out to be off.
-const CONTAINER_CLASS = "relative h-[calc(100dvh-4.25rem-8rem)] w-full overscroll-contain";
+// Height is owned by the caller, not guessed here: app/page.tsx's map-view wrapper
+// (`h-[calc(100dvh-14rem)]`) already accounts for the sticky HeaderShell and the fixed
+// BottomNav, so this container just fills that box. Fill, don't re-derive — a second
+// hardcoded height estimate here previously disagreed with the page's by 1.75rem.
+const CONTAINER_CLASS = "relative h-full w-full overscroll-contain";
 
 export default function PlacesMap({
   places,

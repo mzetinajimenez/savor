@@ -72,9 +72,14 @@ The app is a standard Next.js project deployed on **Vercel** (personal scope).
   vercel deploy --prod   # promote to production
   ```
 
-There are no environment variables or backing services to configure — the
-`/api/lookup` route proxies OpenStreetMap's Photon search API and needs no
-key.
+The `/api/lookup` route proxies OpenStreetMap's Photon search API and needs no
+key or backing service. The map view is the one optional exception: set
+`NEXT_PUBLIC_PROTOMAPS_API_KEY` (an origin-restricted Protomaps API key — see
+`docs/superpowers/specs/2026-08-02-map-view-design.md` §4 and §12 for why it's
+safe to expose client-side and how to obtain one) in `.env.local` for local dev
+and in the Vercel project's environment variables for deployment. Without it,
+the app still works fully — the map view just shows an honest "Map unavailable"
+state instead of tiles.
 
 ## Backup & restore
 

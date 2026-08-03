@@ -2,8 +2,9 @@
 //
 // Both map surfaces — the Places-tab map and the place-detail header — build their style
 // from here, so the two screens cannot drift apart (see the design spec §8). Framework-free
-// and DOM-free: this returns plain JSON, and app/components/places/PlacesMap.tsx is the only
-// module that imports maplibre-gl itself.
+// and DOM-free: this returns plain JSON. The two modules that import maplibre-gl itself are
+// app/components/places/PlacesMap.tsx and app/components/places/PlaceHeaderMapCanvas.tsx —
+// nothing else should.
 //
 // Stock `dark` flavor, deliberately not a Supper Club basemap. Gold score seals need a
 // neutral surface to sit on; on a bottle-green ground the pins compete with the map for the
