@@ -13,11 +13,14 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 261 tests in 14 files today; keep them passing.
+  must all pass. 308 tests in 17 files today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
-  (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
-  asking first — prefer a built-in or a few lines of local code. (The PWA icons,
-  for example, are generated with Node's built-in `zlib`, not a canvas library.)
+  (Dexie, dexie-react-hooks, next, react, zod, maplibre-gl, @protomaps/basemaps).
+  Do not add an npm package without asking first — prefer a built-in or a few
+  lines of local code. (The PWA icons, for example, are generated with Node's
+  built-in `zlib`, not a canvas library. maplibre-gl and @protomaps/basemaps are
+  lazy-loaded behind one dynamic import — this was one deliberate, measured
+  exception.)
 - **IndexedDB migrations are additive-only, NEVER destructive.** The Dexie schema
   is versioned in `lib/db.ts`. A schema change adds a **new** `db.version(N)`
   block (and bumps `SCHEMA_VERSION`); it never edits the existing `version(1)`
@@ -57,7 +60,15 @@ sabor/
 │       │   ├── PlaceCard.tsx     #   place list-row: name, status, ScoreBadge
 │       │   ├── PlaceFilters.tsx  #   status filter chips (All / Been / Want to try)
 │       │   ├── RatingEditor.tsx  #   per-criterion 1–5 editor → repo.setRating
-│       │   └── ScoreBreakdown.tsx#   per-criterion weight/rating/why explanation, 2 mounts
+│       │   ├── ScoreBreakdown.tsx#   per-criterion weight/rating/why explanation, 2 mounts
+│       │   ├── MapView.tsx       #   map view wrapper (next/dynamic, ssr: false) + partitionByCoords split
+│       │   ├── PlacesMap.tsx     #   MapLibre canvas + markers, listens for place click → selection card
+│       │   ├── MapPin.tsx        #   rendered marker: scored/unscored visual + tap to select
+│       │   ├── MapSelectionCard.tsx #   place info overlay (like PlaceCard), dismissible
+│       │   ├── ViewToggle.tsx    #   list/map tab selector, route.replace with ?view=map/list
+│       │   ├── PinlessPlacesSheet.tsx #   map-based "Find location" sheet: list uncoordinated places, tap to geolocate
+│       │   ├── PlaceHeaderMap.tsx #   place-detail header map (next/dynamic, ssr: false)
+│       │   └── PlaceHeaderMapCanvas.tsx #   MapLibre canvas for header (mounted via idle callback)
 │       ├── categories/
 │       │   ├── CategoryForm.tsx  #   add/edit list sheet
 │       │   └── WeightsEditor.tsx #   per-list criterion weights → repo.setWeights
@@ -66,7 +77,8 @@ sabor/
 │       │   └── VisitCard.tsx     #   visit row for journal + place detail
 │       └── settings/
 │           ├── CriteriaEditor.tsx#   rename / add / remove / reorder criteria
-│           └── BackupPanel.tsx   #   export + import the JSON backup
+│           ├── BackupPanel.tsx   #   export + import the JSON backup
+│           └── MapCachePanel.tsx #   tile cache size + clear button
 │
 ├── lib/                          # framework-free core; unit-tested with fake-indexeddb (no React/jsdom)
 │   ├── types.ts                  # entity types, the SyncFields trio, and *Input write-payload shapes
@@ -82,8 +94,12 @@ sabor/
 │   ├── useLongPress.ts           # long-press/hover-intent peek gesture (categories/[id]'s ranked rows)
 │   ├── sheetDrag.ts              # pure drag-to-dismiss math — offset, velocity, thresholds
 │   ├── sheetParam.ts             # pure ?sheet= query-string helpers (withSheet/withoutSheet)
+│   ├── tileCache.ts              # pure tile-cache policy — byte cap, LRU eviction, cache keys
+│   ├── tileCacheStore.ts         # thin Cache API wrapper + the savor-tiles:// MapLibre protocol
+│   ├── mapStyle.ts               # Protomaps dark basemap style + origin-restricted key wiring
+│   ├── mapBounds.ts              # pure fit-bounds camera math + pinned/pinless partition
 │   ├── useSheetParam.ts          # URL-derived sheet state — pushState open / history.back close
-│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup, sheetDrag, sheetParam) and lib/social/ (index, parse, pickUrl)
+│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup, sheetDrag, sheetParam, tileCache, mapStyle, mapBounds) and lib/social/ (index, parse, pickUrl)
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
@@ -218,6 +234,55 @@ path around the repo.
   an entity that no longer exists. Navigate with `router.replace` (not `push`, which would
   stack a new entry instead of consuming the `?sheet=` one) and let the sheet unmount with the
   route; see `CategoryForm.tsx`'s and `PlaceEditSheet`'s `handleDelete`.
+- **View state lives in `?view=<name>`, and it is NOT the `?sheet=` mechanism.** `?view=map` on
+  the Places tab is a view toggle: read with `useSearchParams()`, written with
+  `router.replace(…, { scroll: false })` so switching never grows the history stack, exactly like
+  `?tab=` / `?city=` on the category route. It must not go through `useSheetParam`, which pushes
+  an entry and consumes it with `history.back()` — right for a sheet you dismiss, wrong for a
+  view you switch to and stay in. An unrecognised value falls back to the default view. The
+  param survives the cold-load `?sheet=` strip (`withoutSheet` preserves every other param), so
+  `/?view=map&sheet=add` reloads as `/?view=map`.
+- **MapLibre is imported in exactly two modules.** `app/components/places/PlacesMap.tsx` (the
+  interactive Places-tab map) and `app/components/places/PlaceHeaderMapCanvas.tsx` (the
+  decorative, non-interactive place-detail header map) are the only files that may import
+  `maplibre-gl`; everything else goes through `MapView.tsx` / `PlaceHeaderMap.tsx`'s
+  `next/dynamic({ ssr: false })` boundaries, so no other route pays for the ~281 KB chunk. The
+  basemap style is defined once in `lib/mapStyle.ts` and shared by the map tab and the
+  place-detail header, so the two cannot drift.
+- **The map partitions the list's result; it never runs its own query.** The map consumes the
+  same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
+  query is the bug commit `393cdfe` fixed for category city chips.
+- **Tile attribution is not dismissible.** "Protomaps © OpenStreetMap" renders on every map
+  surface — the same ODbL obligation savor carries for Photon. Restyle it, never hide it.
+- **Map tiles must come from an origin that grants CORS to savor's.** A third-party PMTiles
+  bucket that denies the preflight paints a plausible-looking *empty map*, not an error, and
+  `curl` cannot reproduce it (it sends no `Origin`). Any tile-source change is verified in a
+  browser with the Network tab open.
+- **Tile caching is gated on `navigator.storage.persisted()`, and the gate is not optional.**
+  The Cache API cannot touch IndexedDB, but the two **share one origin quota**, and browsers
+  evict **per-origin, all-or-nothing**. A large tile cache does not delete data — it raises the
+  odds the browser throws away the whole origin *including* the data. So: if persistence was not
+  granted, tiles are served but never stored; the check is re-run on **every mount** of a map
+  (browsers grant persistence later as engagement heuristics are satisfied), never cached at
+  startup; and `lib/tileCache.ts`'s own byte cap with LRU eviction means savor never drifts near
+  the browser's quota and never lets the browser decide what to drop.
+- **"Clear map cache" deletes exactly one named Cache Storage bucket.** It can never reach `meta`
+  or `criteria`, which is why it needs no `ConfirmBox` and is **not** coral — it throws away
+  re-downloadable tiles, not user data. Do not wire it into any reset-everything path; CLAUDE.md's
+  "clear `meta` + `criteria` together" rule is about those two and this button stays clear of both.
+- **Offline means a warm cache, not offline maps.** Tiles already viewed keep working offline; a
+  neighbourhood never opened will not be there. savor has no service worker, and introducing one
+  solely for tiles is the wrong scope — cache versioning and update semantics are a decision
+  about the whole app.
+- **Coordinates are only ever written on an explicit tap.** The **Find location** flow in
+  `PinlessPlacesSheet` is the only path that sets coordinates on an existing place. No silent
+  auto-geocoding, ever, not even for a single high-confidence match: there is no UI anywhere to
+  correct a wrong coordinate, so a silent write would be permanent. `searchPlaces`' three
+  outcomes (failure / empty / results) stay distinct — an offline blip must never read as
+  "that restaurant doesn't exist".
+- **The place-detail header map is decorative.** `aria-hidden`, never focusable, loaded on idle,
+  and the page renders complete without it. The address line remains the accessible source of
+  location — the same accelerator-never-the-only-path principle as the long-press score peek.
 - **Destructive confirms use `ConfirmBox`.** Inline `role="alertdialog"` with a focus move —
   not a stacked sheet, and not a bare coral div.
 - **Toast on failed writes.** Wrap repo writes in the UI and `toast(...)` on
@@ -235,6 +300,17 @@ path around the repo.
 
 Known gaps, not yet urgent enough to block a commit but worth doing soon:
 
+- **The map tile-cache cap may still be an estimate.** Task 8's tile-cache-cap measurement
+  (confirming ~40MB/~500 tiles against real tile sizes) was deferred and never performed — it
+  remains an unconfirmed estimate. Revisit once the Protomaps API key is available and cache
+  behaviour can be measured against real tile payloads.
+- **No automated coverage for the map's browser behaviour.** Pin rendering, pan-vs-tap
+  deselection, the geolocation prompt, the persistence gate and the warm-cache offline path were
+  all verified by hand. Land them alongside the `?sheet=` specs when `@playwright/test` is
+  scaffolded (a new devDependency — ask first).
+- **Antimeridian-spanning collections fit the long way round.** `lib/mapBounds.ts` does not
+  handle a bounding box crossing ±180°. Irrelevant for a personal restaurant ledger; fix it if
+  someone's places ever straddle the date line.
 - **Type↔zod drift guard.** `lib/types.ts`'s entity interfaces and `lib/repo.ts`'s
   hand-maintained `*Fields` zod schemas are two independent sources of truth for
   the same shape. Nothing currently fails CI if they drift (e.g. a new optional
