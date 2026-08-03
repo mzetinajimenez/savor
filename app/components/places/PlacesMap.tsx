@@ -106,6 +106,13 @@ export default function PlacesMap({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         try {
+          // getCurrentPosition is async — the component can unmount (map-lifecycle effect's
+          // cleanup runs `map.remove()`, the geo-marker cleanup effect nulls `geoMarkerRef`) or
+          // the map can fail/be torn down while this request is still in flight. Re-check the
+          // LIVE ref, not the `map` local captured at click time, before touching the (possibly
+          // now-removed) instance — maplibre-gl doesn't promise `.easeTo`/`.addTo` are safe to
+          // call post-`.remove()`, and this has been observed to throw.
+          if (mapRef.current !== map) return;
           const { latitude, longitude } = position.coords;
           map.easeTo({ center: [longitude, latitude], zoom: 14 });
           const existing = geoMarkerRef.current;
@@ -126,7 +133,9 @@ export default function PlacesMap({
       () => {
         // Permission denied, timeout, and position-unavailable all land here undistinguished —
         // the browser's own permission UI already explained a denial, and the user doesn't need
-        // savor to re-explain which of the three happened.
+        // savor to re-explain which of the three happened. No map-touching work here, but the
+        // component can still have unmounted before this fires; toast() is safe to call
+        // regardless (module-level pub/sub, no DOM/ref access), so no guard is needed for it.
         try {
           toast("Couldn't get your location", true);
         } finally {
@@ -362,7 +371,8 @@ export default function PlacesMap({
       {typeof navigator !== "undefined" && navigator.geolocation ? (
         <button
           type="button"
-          aria-label="Show my location"
+          aria-label={locating ? "Finding your location…" : "Show my location"}
+          aria-busy={locating}
           onClick={handleLocate}
           disabled={locating}
           className="absolute right-3 top-3 z-10 grid min-h-11 min-w-11 place-items-center rounded-sm border border-rule bg-raised text-cream transition active:scale-[0.97] disabled:opacity-60"
