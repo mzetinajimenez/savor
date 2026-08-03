@@ -7,7 +7,7 @@
 // selection card land in Task 5, the List/Map toggle in Task 4. `liveCriterionIds` is accepted
 // and ignored for now so the prop shape Task 5 needs doesn't have to be re-added later.
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 // maplibre-gl v6 ships no default export (ESM-only named exports) — import the pieces used
 // directly rather than a `maplibregl` namespace default that doesn't exist.
 import { AttributionControl, Map as MapLibreMap } from "maplibre-gl";
@@ -29,13 +29,18 @@ export default function PlacesMap({
   places: Place[];
   liveCriterionIds: Set<string>;
 }) {
+  // `key` is an env var — fixed for the lifetime of the app, never changes at runtime. `style`
+  // is read again, fresh, inside the mount effect below rather than threaded in as a dependency
+  // (see that effect's comment for why: the effect must run its create/destroy cycle exactly
+  // once per mount, matching LookupCombobox.tsx's session-ref pattern, not respond to a
+  // recomputed style object's identity).
   const key = protomapsApiKey();
-  // Memoized on `key` (a stable primitive that never changes at runtime) rather than recomputed
-  // bare on every render — mapStyle() returns a fresh object literal each call, and depending on
-  // that identity directly in the effect below would tear down and rebuild the map on every
-  // parent re-render (e.g. every places-prop change), which is exactly the camera-yank the
-  // userMovedRef guard exists to prevent.
-  const style = useMemo(() => mapStyle(key), [key]);
+  const style = mapStyle(key);
+
+  // Set when maplibregl.Map's constructor throws (e.g. no WebGL — private browsing, some
+  // in-app browsers). A broken tile path must never look like a blank map; this folds the
+  // construction-failure case into the same "Map unavailable" fallback the no-key case uses.
+  const [mapFailed, setMapFailed] = useState(false);
 
   const pinned = useMemo(() => partitionByCoords(places).pinned, [places]);
 
@@ -55,24 +60,45 @@ export default function PlacesMap({
   const userMovedRef = useRef(false);
 
   useEffect(() => {
+    // Fresh read, not the outer `style`/`key` closure — this effect has `[]` deps (see below)
+    // so it must not implicitly depend on anything from render scope that could theoretically
+    // change; recomputing here keeps that true regardless.
+    const style = mapStyle(protomapsApiKey());
     if (!style || !containerRef.current) return;
 
     // The map instance lives in this ref and is created AND destroyed by THIS SAME effect —
-    // never a useMemo paired with a separately-scoped cleanup effect. maplibregl.Map#remove()
-    // is a one-way teardown, the same shape as LookupCombobox.tsx's session.destroy(): React
-    // Strict Mode double-invokes a committed mount's effects (setup -> cleanup -> setup)
-    // WITHOUT recreating useMemo values, so a memoized map torn down by an unrelated effect's
-    // cleanup would go create -> destroy -> (dead) before the first paint settles, and every
-    // later fitBounds/jumpTo call would silently no-op against a removed map. Pairing
-    // create/destroy inside one effect means Strict Mode's extra cleanup+setup cycle produces a
-    // fresh, live map instead of killing the only one that will ever exist.
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style,
-      // Default attribution control is replaced below with an explicit, non-compact one —
-      // ODbL requires it visible, not collapsed into a toggle button.
-      attributionControl: false,
-    });
+    // never a useMemo paired with a separately-scoped cleanup effect, and never re-created by a
+    // dependency-array change (hence `[]` below). maplibregl.Map#remove() is a one-way teardown,
+    // the same shape as LookupCombobox.tsx's session.destroy() (see its useEffect at line ~91,
+    // also `[]`): React Strict Mode double-invokes a committed mount's effects (setup -> cleanup
+    // -> setup) WITHOUT recreating useMemo values, so a memoized map torn down by an unrelated
+    // effect's cleanup would go create -> destroy -> (dead) before the first paint settles, and
+    // every later fitBounds/jumpTo call would silently no-op against a removed map. Pairing
+    // create/destroy inside one effect with empty deps means Strict Mode's extra cleanup+setup
+    // cycle produces a fresh, live map instead of killing the only one that will ever exist.
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMap({
+        container: containerRef.current,
+        style,
+        // Default attribution control is replaced below with an explicit, non-compact one —
+        // ODbL requires it visible, not collapsed into a toggle button.
+        attributionControl: false,
+      });
+    } catch (err) {
+      // The constructor throws when the environment can't give it a WebGL context (private
+      // browsing in some browsers, certain in-app browsers, disabled hardware acceleration).
+      // A broken tile path must never look like a blank/empty map — fold this into the same
+      // "Map unavailable" fallback the no-key case renders, rather than letting the exception
+      // propagate out of the effect and crash the component.
+      console.error("PlacesMap: MapLibre failed to initialize", err);
+      // react-hooks/set-state-in-effect forbids calling setState synchronously within an
+      // effect body; queueMicrotask defers it to a callback, the same shape the rule's own
+      // guidance describes ("calling setState in a callback function when external state
+      // changes"), without introducing a visible delay.
+      queueMicrotask(() => setMapFailed(true));
+      return;
+    }
     mapRef.current = map;
 
     map.addControl(
@@ -117,14 +143,16 @@ export default function PlacesMap({
       map.remove();
       mapRef.current = null;
     };
-    // Exactly once per mount (create/destroy paired, see comment above). `style` is the only
-    // dependency that can legitimately change it (a runtime key swap); `places`/`pinned` are
+    // Exactly once per mount (create/destroy paired, see comment above) — mirrors
+    // LookupCombobox.tsx's session effect exactly. `style` is read fresh inside the effect body
+    // (see above) rather than listed as a dependency, since `protomapsApiKey()` never changes
+    // at runtime and this effect must not re-run on it regardless. `places`/`pinned` are
     // deliberately excluded — re-running this effect on every places change is the re-fit bug
     // this whole structure exists to avoid. `pinnedRef` (a ref) and `cameraFor`/`partitionByCoords`
     // (module-level pure functions) are stable and don't need to be listed.
-  }, [style]);
+  }, []);
 
-  if (!style) {
+  if (!style || mapFailed) {
     return (
       <div
         className={`${CONTAINER_CLASS} flex items-center justify-center bg-raised px-6 text-center`}
