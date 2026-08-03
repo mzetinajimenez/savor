@@ -5,16 +5,48 @@
 // client-side afterward since PlacesFilter (lib/hooks.ts) doesn't carry a cuisine field. Two
 // distinct empty states: no places at all (onboarding) vs. filters excluding everything (a
 // lighter nudge to loosen them) — kept apart so a first-time user and a frustrated filterer see
-// different messages.
+// different messages. A `?view=` param (list/map) toggles the body between the list and the
+// map, both fed by the same filtered `places` array — see PlacesInner below.
 
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 import { useCategories, useCriteria, usePlaces } from "@/lib/hooks";
 import type { PlaceStatus } from "@/lib/types";
+import MapView from "./components/places/MapView";
 import PlaceCard from "./components/places/PlaceCard";
 import PlaceFilters from "./components/places/PlaceFilters";
+import ViewToggle from "./components/places/ViewToggle";
 import { AddPlaceButton, EmptyState, HeaderShell } from "./components/ui";
 
 export default function PlacesPage() {
+  // The List/Map toggle reads ?view= via useSearchParams(), which makes this route dynamic
+  // and requires a Suspense boundary around its caller or `next build` fails — same split as
+  // app/categories/[id]/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <PlacesInner />
+    </Suspense>
+  );
+}
+
+function PlacesInner() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // ?view= is a VIEW TOGGLE, not a sheet: read here and written with router.replace, exactly
+  // like ?tab= / ?city= on the category route. It deliberately does NOT go through
+  // useSheetParam — that hook pushes a history entry and consumes it with history.back(),
+  // which is right for a sheet you dismiss and wrong for a view you switch to and stay in.
+  const view: "list" | "map" = searchParams.get("view") === "map" ? "map" : "list";
+
+  function setView(next: "list" | "map") {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "map") params.set("view", "map");
+    else params.delete("view");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<PlaceStatus | undefined>(undefined);
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
@@ -64,6 +96,7 @@ export default function PlacesPage() {
       <HeaderShell title="Places">
         <div className="flex flex-col gap-3">
           <SearchInput value={search} onChange={setSearch} />
+          {hasAnyPlaces ? <ViewToggle view={view} onChange={setView} /> : null}
           {hasAnyPlaces ? (
             <PlaceFilters
               status={status}
@@ -89,7 +122,7 @@ export default function PlacesPage() {
         </EmptyState>
       ) : null}
 
-      {!loading && hasAnyPlaces && places && places.length === 0 ? (
+      {view === "list" && !loading && hasAnyPlaces && places && places.length === 0 ? (
         <EmptyState
           emoji="🔍"
           title="No matches"
@@ -101,7 +134,7 @@ export default function PlacesPage() {
         />
       ) : null}
 
-      {places && places.length > 0 ? (
+      {view === "list" && places && places.length > 0 ? (
         <ul className="flex flex-col">
           {places.map((place) => (
             <li key={place.id}>
@@ -109,6 +142,15 @@ export default function PlacesPage() {
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {view === "map" && places ? (
+        // 100dvh minus the sticky header (safe-area-aware title + search + toggle + filter
+        // row, ~9.5rem in practice) and the fixed BottomNav (h-16 plus its safe-area inset,
+        // ~4.5rem) — see layout.tsx's pb-[calc(8rem+env(safe-area-inset-bottom))] on <main>.
+        <div className="h-[calc(100dvh-14rem)] w-full overscroll-contain">
+          <MapView places={places} liveCriterionIds={liveCriterionIds} />
+        </div>
       ) : null}
     </>
   );
