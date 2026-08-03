@@ -11,8 +11,11 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { useCategories, useCriteria, usePlaces } from "@/lib/hooks";
+import { partitionByCoords } from "@/lib/mapBounds";
+import { useSheetParam } from "@/lib/useSheetParam";
 import type { PlaceStatus } from "@/lib/types";
 import MapView from "./components/places/MapView";
+import PinlessPlacesSheet from "./components/places/PinlessPlacesSheet";
 import PlaceCard from "./components/places/PlaceCard";
 import PlaceFilters from "./components/places/PlaceFilters";
 import ViewToggle from "./components/places/ViewToggle";
@@ -91,6 +94,16 @@ function PlacesInner() {
   const hasAnyPlaces = (allPlaces?.length ?? 0) > 0;
   const hasFiltersActive = Boolean(searchTerm || status || categoryId || cuisine);
 
+  // `?sheet=pinless` — the pinless-places sheet lives here, not in PlacesMap: URL concerns stay
+  // in the page, MapLibre concerns stay in the map component (PlacesMap takes onShowPinless
+  // rather than owning useSheetParam itself). Partitioned from the SAME filtered `places` array
+  // the map renders, so the sheet's list can never disagree with what the footer line counted.
+  const pinless = useSheetParam("pinless");
+  const pinlessPlaces = useMemo(
+    () => (places ? partitionByCoords(places).pinless : []),
+    [places]
+  );
+
   return (
     <>
       <HeaderShell title="Places">
@@ -149,8 +162,16 @@ function PlacesInner() {
         // row, ~9.5rem in practice) and the fixed BottomNav (h-16 plus its safe-area inset,
         // ~4.5rem) — see layout.tsx's pb-[calc(8rem+env(safe-area-inset-bottom))] on <main>.
         <div className="h-[calc(100dvh-14rem)] w-full overscroll-contain">
-          <MapView places={places} liveCriterionIds={liveCriterionIds} />
+          <MapView
+            places={places}
+            liveCriterionIds={liveCriterionIds}
+            onShowPinless={pinless.openSheet}
+          />
         </div>
+      ) : null}
+
+      {pinless.open ? (
+        <PinlessPlacesSheet places={pinlessPlaces} onClose={pinless.closeSheet} />
       ) : null}
     </>
   );

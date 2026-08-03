@@ -35,9 +35,14 @@ const CONTAINER_CLASS = "relative h-[calc(100dvh-4.25rem-8rem)] w-full overscrol
 export default function PlacesMap({
   places,
   liveCriterionIds,
+  onShowPinless,
 }: {
   places: Place[];
   liveCriterionIds: Set<string>;
+  /** Raises the pinless-places sheet. PlacesMap does not own useSheetParam itself — app/page.tsx
+   *  owns the `?sheet=pinless` param, keeping the URL concern in the page and MapLibre concerns
+   *  in this file. */
+  onShowPinless: () => void;
 }) {
   // `key` is an env var — fixed for the lifetime of the app, never changes at runtime. `style`
   // is read again, fresh, inside the mount effect below rather than threaded in as a dependency
@@ -52,7 +57,7 @@ export default function PlacesMap({
   // construction-failure case into the same "Map unavailable" fallback the no-key case uses.
   const [mapFailed, setMapFailed] = useState(false);
 
-  const pinned = useMemo(() => partitionByCoords(places).pinned, [places]);
+  const { pinned, pinless } = useMemo(() => partitionByCoords(places), [places]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -416,6 +421,20 @@ export default function PlacesMap({
           score={selectedScore}
           onClose={() => setSelectedId(null)}
         />
+      ) : null}
+      {/* The honest footer — without it the map silently under-reports the collection, and the
+          gap grows with every manually-typed place. Hidden entirely at zero pinless places, and
+          hidden while the selection card is showing so the two never overlap (both anchor to the
+          bottom of the map area). */}
+      {pinless.length > 0 && !selectedPlace ? (
+        <button
+          type="button"
+          onClick={onShowPinless}
+          className="absolute inset-x-0 bottom-0 z-10 min-h-11 w-full bg-ground-deep/90 px-4 py-2.5 text-left text-sm text-cream transition active:bg-ground-deep"
+        >
+          {pinless.length} place{pinless.length === 1 ? "" : "s"}{" "}
+          {pinless.length === 1 ? "isn't" : "aren't"} on the map
+        </button>
       ) : null}
       {/* The user's own position — a solid cream dot, distinct from both the filled-gold `been`
           seal and the hollow-cream-ring `want_to_try` pin (MapPin). Non-interactive (no tap
