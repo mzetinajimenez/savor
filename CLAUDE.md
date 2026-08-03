@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 261 tests in 14 files today; keep them passing.
+  must all pass. 288 tests in 16 files today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod). Do not add an npm package without
   asking first — prefer a built-in or a few lines of local code. (The PWA icons,
@@ -57,7 +57,12 @@ sabor/
 │       │   ├── PlaceCard.tsx     #   place list-row: name, status, ScoreBadge
 │       │   ├── PlaceFilters.tsx  #   status filter chips (All / Been / Want to try)
 │       │   ├── RatingEditor.tsx  #   per-criterion 1–5 editor → repo.setRating
-│       │   └── ScoreBreakdown.tsx#   per-criterion weight/rating/why explanation, 2 mounts
+│       │   ├── ScoreBreakdown.tsx#   per-criterion weight/rating/why explanation, 2 mounts
+│       │   ├── MapView.tsx       #   map view wrapper (next/dynamic, ssr: false) + partitionByCoords split
+│       │   ├── PlacesMap.tsx     #   MapLibre canvas + markers, listens for place click → selection card
+│       │   ├── MapPin.tsx        #   rendered marker: scored/unscored visual + tap to select
+│       │   ├── MapSelectionCard.tsx #   place info overlay (like PlaceCard), dismissible
+│       │   └── ViewToggle.tsx    #   list/map tab selector, route.replace with ?view=map/list
 │       ├── categories/
 │       │   ├── CategoryForm.tsx  #   add/edit list sheet
 │       │   └── WeightsEditor.tsx #   per-list criterion weights → repo.setWeights
@@ -82,8 +87,10 @@ sabor/
 │   ├── useLongPress.ts           # long-press/hover-intent peek gesture (categories/[id]'s ranked rows)
 │   ├── sheetDrag.ts              # pure drag-to-dismiss math — offset, velocity, thresholds
 │   ├── sheetParam.ts             # pure ?sheet= query-string helpers (withSheet/withoutSheet)
+│   ├── mapStyle.ts               # Protomaps dark basemap style + origin-restricted key wiring
+│   ├── mapBounds.ts              # pure fit-bounds camera math + pinned/pinless partition
 │   ├── useSheetParam.ts          # URL-derived sheet state — pushState open / history.back close
-│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup, sheetDrag, sheetParam) and lib/social/ (index, parse, pickUrl)
+│   └── *.test.ts                 # Vitest suites across lib/ (db, repo, hooks, ranking, lookup, photon, autocomplete, backup, sheetDrag, sheetParam, mapStyle, mapBounds) and lib/social/ (index, parse, pickUrl)
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
@@ -218,6 +225,28 @@ path around the repo.
   an entity that no longer exists. Navigate with `router.replace` (not `push`, which would
   stack a new entry instead of consuming the `?sheet=` one) and let the sheet unmount with the
   route; see `CategoryForm.tsx`'s and `PlaceEditSheet`'s `handleDelete`.
+- **View state lives in `?view=<name>`, and it is NOT the `?sheet=` mechanism.** `?view=map` on
+  the Places tab is a view toggle: read with `useSearchParams()`, written with
+  `router.replace(…, { scroll: false })` so switching never grows the history stack, exactly like
+  `?tab=` / `?city=` on the category route. It must not go through `useSheetParam`, which pushes
+  an entry and consumes it with `history.back()` — right for a sheet you dismiss, wrong for a
+  view you switch to and stay in. An unrecognised value falls back to the default view. The
+  param survives the cold-load `?sheet=` strip (`withoutSheet` preserves every other param), so
+  `/?view=map&sheet=add` reloads as `/?view=map`.
+- **MapLibre is imported in exactly one module.** `app/components/places/PlacesMap.tsx` is the
+  only file that may import `maplibre-gl`; everything else goes through
+  `app/components/places/MapView.tsx`'s `next/dynamic({ ssr: false })` boundary, so no other
+  route pays for the ~281 KB chunk. The basemap style is defined once in `lib/mapStyle.ts` and
+  shared by the map tab and the place-detail header, so the two cannot drift.
+- **The map partitions the list's result; it never runs its own query.** The map consumes the
+  same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
+  query is the bug commit `393cdfe` fixed for category city chips.
+- **Tile attribution is not dismissible.** "Protomaps © OpenStreetMap" renders on every map
+  surface — the same ODbL obligation savor carries for Photon. Restyle it, never hide it.
+- **Map tiles must come from an origin that grants CORS to savor's.** A third-party PMTiles
+  bucket that denies the preflight paints a plausible-looking *empty map*, not an error, and
+  `curl` cannot reproduce it (it sends no `Origin`). Any tile-source change is verified in a
+  browser with the Network tab open.
 - **Destructive confirms use `ConfirmBox`.** Inline `role="alertdialog"` with a focus move —
   not a stacked sheet, and not a bare coral div.
 - **Toast on failed writes.** Wrap repo writes in the UI and `toast(...)` on
@@ -235,6 +264,11 @@ path around the repo.
 
 Known gaps, not yet urgent enough to block a commit but worth doing soon:
 
+- **The map has no tile cache yet, deliberately.** Stage 1 does not write tiles, because the
+  Cache API shares one origin quota with IndexedDB and browsers evict per-origin,
+  all-or-nothing. The persistence gate, the ~40 MB cap with LRU eviction, and the Settings
+  clear button are Stage 2 of `docs/superpowers/plans/2026-08-02-map-view-plan.md`. Do not add
+  tile caching without them.
 - **Type↔zod drift guard.** `lib/types.ts`'s entity interfaces and `lib/repo.ts`'s
   hand-maintained `*Fields` zod schemas are two independent sources of truth for
   the same shape. Nothing currently fails CI if they drift (e.g. a new optional
