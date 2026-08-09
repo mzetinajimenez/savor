@@ -157,7 +157,7 @@ function PlacesInner() {
         </ul>
       ) : null}
 
-      {view === "map" && places ? (
+      {view === "map" && hasAnyPlaces && places ? (
         // 100dvh minus the sticky header (safe-area-aware title + search + toggle + filter
         // row, ~9.5rem in practice) and the fixed BottomNav (h-16 plus its safe-area inset,
         // ~4.5rem) — see layout.tsx's pb-[calc(8rem+env(safe-area-inset-bottom))] on <main>.
