@@ -16,6 +16,7 @@ import { toast } from "@/app/components/Toast";
 import { HeaderShell } from "@/app/components/ui";
 import BackupPanel from "@/app/components/settings/BackupPanel";
 import CriteriaEditor from "@/app/components/settings/CriteriaEditor";
+import MapCachePanel from "@/app/components/settings/MapCachePanel";
 
 export default function SettingsPage() {
   return (
@@ -33,6 +34,13 @@ export default function SettingsPage() {
         <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Storage</h2>
         <div className="mt-3">
           <StoragePanel />
+        </div>
+      </section>
+
+      <section className="px-4 py-6">
+        <h2 className="font-util text-[0.53rem] font-bold uppercase tracking-[0.24em] text-gold">Map cache</h2>
+        <div className="mt-3">
+          <MapCachePanel />
         </div>
       </section>
 

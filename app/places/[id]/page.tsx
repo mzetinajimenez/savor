@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { useCategories, useCriteria, usePlace, useVisits } from "@/lib/hooks";
+import { hasCoords } from "@/lib/mapBounds";
 import { compositeScore } from "@/lib/ranking";
 import { deletePlace, updatePlace } from "@/lib/repo";
 import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
@@ -21,6 +22,7 @@ import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "@/app/components/Sheet";
 import { toast } from "@/app/components/Toast";
 import { Chip, ConfirmBox, EmptyState, HeaderShell, LinkGlyph, PlusGlyph, RatingRow, ScoreBadge } from "@/app/components/ui";
+import PlaceHeaderMap from "@/app/components/places/PlaceHeaderMap";
 import RatingEditor from "@/app/components/places/RatingEditor";
 import ScoreBreakdown from "@/app/components/places/ScoreBreakdown";
 import VisitForm from "@/app/components/visits/VisitForm";
@@ -154,6 +156,8 @@ function PlaceDetailInner() {
           </button>
         }
       />
+
+      {hasCoords(place) ? <PlaceHeaderMap lat={place.lat!} lng={place.lng!} /> : null}
 
       <section className="px-4 pt-4">
         <button

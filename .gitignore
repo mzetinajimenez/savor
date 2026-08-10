@@ -45,3 +45,9 @@ next-env.d.ts
 
 # playwright mcp scratch (snapshots, console logs)
 .playwright-mcp/
+
+# maplibre-gl worker + its sibling, copied verbatim from node_modules by
+# scripts/copy-maplibre-worker.mjs (see lib/mapStyle.ts's MAPLIBRE_WORKER_URL) — regenerated on
+# every install/dev/build, never committed, so it can't drift out of sync with the installed
+# maplibre-gl version.
+/public/lib/maplibre/
