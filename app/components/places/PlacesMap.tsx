@@ -19,9 +19,9 @@ import { createPortal } from "react-dom";
 // maplibre-gl v6 ships no default export (ESM-only named exports) — import the pieces used
 // directly rather than a `maplibregl` namespace default that doesn't exist.
 import * as maplibregl from "maplibre-gl";
-import { AttributionControl, Map as MapLibreMap, Marker } from "maplibre-gl";
+import { AttributionControl, Map as MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION } from "@/lib/mapStyle";
+import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION, MAPLIBRE_WORKER_URL } from "@/lib/mapStyle";
 import { cameraFor, partitionByCoords } from "@/lib/mapBounds";
 import { registerTileProtocol, TILE_SCHEME } from "@/lib/tileCacheStore";
 import { compositeScore } from "@/lib/ranking";
@@ -29,6 +29,11 @@ import type { Place } from "@/lib/types";
 import { toast } from "../Toast";
 import MapPin from "./MapPin";
 import MapSelectionCard from "./MapSelectionCard";
+
+// See MAPLIBRE_WORKER_URL's own comment in lib/mapStyle.ts: Turbopack doesn't correctly bundle
+// maplibre-gl's automatic worker detection, so every map instance must be pointed at the
+// plain-static-file copy explicitly, before construction.
+setWorkerUrl(MAPLIBRE_WORKER_URL);
 
 // Height is owned by the caller, not guessed here: app/page.tsx's map-view wrapper
 // (`h-[calc(100dvh-14rem)]`) already accounts for the sticky HeaderShell and the fixed

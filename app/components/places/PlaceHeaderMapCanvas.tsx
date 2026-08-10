@@ -29,11 +29,16 @@ import { useEffect, useRef, useState } from "react";
 // PlacesMap.tsx: the namespace import feeds registerTileProtocol's addProtocol call, the named
 // imports are what this file actually constructs.
 import * as maplibregl from "maplibre-gl";
-import { AttributionControl, Map as MapLibreMap } from "maplibre-gl";
+import { AttributionControl, Map as MapLibreMap, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION } from "@/lib/mapStyle";
+import { mapStyle, protomapsApiKey, MAP_ATTRIBUTION, MAPLIBRE_WORKER_URL } from "@/lib/mapStyle";
 import { SINGLE_PLACE_ZOOM } from "@/lib/mapBounds";
 import { registerTileProtocol, TILE_SCHEME } from "@/lib/tileCacheStore";
+
+// See MAPLIBRE_WORKER_URL's own comment in lib/mapStyle.ts: Turbopack doesn't correctly bundle
+// maplibre-gl's automatic worker detection, so every map instance must be pointed at the
+// plain-static-file copy explicitly, before construction.
+setWorkerUrl(MAPLIBRE_WORKER_URL);
 
 export default function PlaceHeaderMapCanvas({ lat, lng }: { lat: number; lng: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null);

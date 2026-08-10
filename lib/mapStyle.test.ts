@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MAP_ATTRIBUTION,
   MAP_FLAVOR,
+  MAPLIBRE_WORKER_URL,
   mapStyle,
   protomapsApiKey,
   tileUrlTemplate,
@@ -80,5 +81,11 @@ describe("mapStyle", () => {
   it("states the ODbL attribution the map must show", () => {
     expect(MAP_ATTRIBUTION).toContain("Protomaps");
     expect(MAP_ATTRIBUTION).toContain("OpenStreetMap");
+  });
+});
+
+describe("MAPLIBRE_WORKER_URL", () => {
+  it("is a root-relative path matching where scripts/copy-maplibre-worker.mjs copies the worker", () => {
+    expect(MAPLIBRE_WORKER_URL).toBe("/lib/maplibre/maplibre-gl-worker.mjs");
   });
 });

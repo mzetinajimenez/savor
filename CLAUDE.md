@@ -103,6 +103,7 @@ sabor/
 │
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
+├── scripts/copy-maplibre-worker.mjs # copies maplibre-gl's worker + sibling into public/lib/maplibre (postinstall/predev/prebuild) — see MAPLIBRE_WORKER_URL
 └── (config) next.config.mjs · tsconfig.json ("@/*" → repo root, strict) · eslint.config.mjs · postcss.config.mjs · vitest.config.ts
 ```
 
@@ -249,6 +250,20 @@ path around the repo.
   `next/dynamic({ ssr: false })` boundaries, so no other route pays for the ~281 KB chunk. The
   basemap style is defined once in `lib/mapStyle.ts` and shared by the map tab and the
   place-detail header, so the two cannot drift.
+- **Both maplibre-gl importers must call `setWorkerUrl(MAPLIBRE_WORKER_URL)` before constructing
+  a `Map`.** Turbopack (Next's bundler, for both `dev` and `build`) doesn't correctly resolve
+  maplibre-gl v6's automatic Blob+`import.meta.url` worker detection — a tile request queues but
+  the Worker never activates, so it silently never resolves and no tile ever loads, with no
+  console error (open upstream issue:
+  [maplibre-gl-js#8126](https://github.com/maplibre/maplibre-gl-js/issues/8126)). The workaround:
+  `scripts/copy-maplibre-worker.mjs` copies `maplibre-gl-worker.mjs` and its sibling
+  `maplibre-gl-shared.mjs` verbatim from `node_modules/` into `public/lib/maplibre/` on every
+  install/dev/build (never committed — see `.gitignore` — so it can't drift out of sync with the
+  installed maplibre-gl version), and `MAPLIBRE_WORKER_URL` in `lib/mapStyle.ts` points at that
+  plain, bundler-untouched static file. Both files must sit in the same directory — the worker's
+  own dist file imports its sibling via a plain relative import, and a Turbopack asset-copy of
+  the worker alone (e.g. via `new URL(..., import.meta.url)`) copies it byte-for-byte without
+  resolving that internal import, 404ing on the worker's own first load.
 - **The map partitions the list's result; it never runs its own query.** The map consumes the
   same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
   query is the bug commit `393cdfe` fixed for category city chips.

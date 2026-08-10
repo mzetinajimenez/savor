@@ -43,6 +43,17 @@ export const MAP_ATTRIBUTION =
 
 const SOURCE_NAME = "protomaps";
 
+/** Turbopack doesn't correctly resolve maplibre-gl v6's automatic Blob+import.meta.url worker
+ *  detection (open upstream issue: https://github.com/maplibre/maplibre-gl-js/issues/8126) — a
+ *  tile request gets queued but the underlying Worker never activates, so it silently never
+ *  resolves and no tile ever loads. Every module that constructs a maplibregl.Map (PlacesMap.tsx,
+ *  PlaceHeaderMapCanvas.tsx) must call `setWorkerUrl(MAPLIBRE_WORKER_URL)` before doing so, to
+ *  bypass that detection entirely. The file this points at is copied verbatim from
+ *  node_modules/maplibre-gl/dist/ by scripts/copy-maplibre-worker.mjs (see that script's own
+ *  comment for why it must be a plain, bundler-untouched static file, not a Turbopack asset
+ *  import) — never committed, regenerated on every install/dev/build. */
+export const MAPLIBRE_WORKER_URL = "/lib/maplibre/maplibre-gl-worker.mjs";
+
 /** The origin-restricted key, or null when none is configured (local dev without an account). */
 export function protomapsApiKey(): string | null {
   const key = process.env.NEXT_PUBLIC_PROTOMAPS_API_KEY?.trim();
