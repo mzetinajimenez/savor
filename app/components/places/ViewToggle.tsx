@@ -26,7 +26,7 @@ export default function ViewToggle({
         aria-pressed={view === "list"}
         onClick={() => onChange("list")}
         className={`${segmentBaseClass} ${
-          view === "list" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised"
+          view === "list" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised md:hover:text-cream"
         }`}
       >
         List
@@ -36,7 +36,7 @@ export default function ViewToggle({
         aria-pressed={view === "map"}
         onClick={() => onChange("map")}
         className={`${segmentBaseClass} ${
-          view === "map" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised"
+          view === "map" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised md:hover:text-cream"
         }`}
       >
         Map

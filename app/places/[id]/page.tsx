@@ -181,7 +181,7 @@ function PlaceDetailInner() {
             href={place.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gold active:opacity-70 md:hover:opacity-70"
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gold active:opacity-70 md:hover:underline"
           >
             <LinkGlyph className="h-4 w-4" />
             {place.sourcePlatform === "instagram"
@@ -494,7 +494,7 @@ function PlaceEditSheet({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:opacity-70"
+              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:bg-rule"
             >
               Delete place
             </button>

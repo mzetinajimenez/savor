@@ -37,7 +37,7 @@ export default function MapSelectionCard({
       // inset) rather than guessing at a generic offset. z-20 stays under the nav's z-30.
       // anim-toast is the existing toast keyframe (app/globals.css) — reused rather than
       // inventing a new one, and already suppressed under prefers-reduced-motion there.
-      className="anim-toast fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 rounded-sm border border-rule bg-raised px-4 py-3 shadow-lg md:inset-x-[calc(15rem+1rem)] md:bottom-[calc(1.25rem+env(safe-area-inset-bottom))]"
+      className="anim-toast fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 rounded-sm border border-rule bg-raised px-4 py-3 shadow-lg md:inset-x-auto md:bottom-[calc(1.25rem+env(safe-area-inset-bottom))] md:left-[calc(50vw+7.5rem)] md:w-[calc(45rem-2rem)] md:-translate-x-1/2"
     >
       <Link href={`/places/${place.id}`} className="flex min-w-0 flex-1 items-center gap-3">
         <div className="min-w-0 flex-1">
@@ -58,7 +58,7 @@ export default function MapSelectionCard({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-sm text-cream/80 transition active:scale-[0.97] active:bg-ground-deep"
+        className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-sm text-cream/80 transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
           <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />

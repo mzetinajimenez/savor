@@ -267,17 +267,19 @@ path around the repo.
 - **Desktop (≥`md`) gets a left nav rail, not a wider phone layout.** `BottomNav`
   (`md:hidden`) and `NavRail` (`hidden md:flex`, `app/components/nav/NavRail.tsx`)
   share one tab list (`app/components/nav/tabs.tsx`) so the two surfaces can't
-  list a different set of tabs. Content is offset past the rail
-  (`md:ml-60`) and constrained to a ~720px reading column (`md:max-w-[45rem]`)
-  rather than stretching phone-width chrome across a wide window — set once on
-  `<main>` in `app/layout.tsx`, not per-route. Sheets stay centered modals at
-  ≥`sm`, unchanged by the rail.
+  list a different set of tabs. Content is padded past the rail and centered in
+  the remaining space (`md:pl-60 md:flex md:justify-center` on a wrapping `<div>`
+  in `app/layout.tsx`) and constrained to a ~720px reading column
+  (`md:max-w-[45rem]` on `<main>`) rather than stretching phone-width chrome
+  across a wide window — set once in the root layout, not per-route. Sheets stay
+  centered modals at ≥`sm`, unchanged by the rail.
 - **Hover states are `md:hover:`, never bare `hover:`.** Gated to `md` so a
   touch tap (which fires `:hover` on many mobile browsers with no way to un-hover)
   never gets stuck showing a hover treatment meant for a mouse. Each control's
-  hover class reuses the same token its existing `active:` press state already
-  uses — a new hover treatment must never introduce a color absent from the
-  `active:` variant beside it.
+  hover class reuses a token already in the app's press/hover vocabulary —
+  typically the same token as the element's own `active:` variant, or (when
+  that variant is scale/opacity-only with nothing to mirror) another token
+  already established for that kind of control elsewhere in this convention.
 - **The map partitions the list's result; it never runs its own query.** The map consumes the
   same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
   query is the bug commit `393cdfe` fixed for category city chips.

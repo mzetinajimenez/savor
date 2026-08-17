@@ -77,11 +77,14 @@ export default function RootLayout({
         {/* Mobile (<md): content clears the fixed bottom nav (nav + FAB overhang + safe area).
             6rem cleared the bar alone and let the FAB sit on top of trailing content, hence
             8rem. Desktop (≥md): NavRail replaces the bottom bar, so that bottom clearance is
-            dropped and a left offset (md:ml-60) plus a ~720px reading column (md:max-w-[45rem])
-            takes its place — see NavRail's own w-60 for why 60 (15rem) is the shared width. */}
-        <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))] md:ml-60 md:max-w-[45rem] md:pb-[env(safe-area-inset-bottom)]">
-          {children}
-        </main>
+            dropped and a left padding (md:pl-60) plus centering the remaining space
+            (md:flex md:justify-center) around a ~720px reading column (md:max-w-[45rem]) takes
+            its place — see NavRail's own w-60 for why 60 (15rem) is the shared width. */}
+        <div className="md:pl-60 md:flex md:justify-center">
+          <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))] md:max-w-[45rem] md:pb-[env(safe-area-inset-bottom)]">
+            {children}
+          </main>
+        </div>
         <BottomNav />
         <Toaster />
         {/* T8's add-place sheet: listens for the FAB's savor:add-place event, renders on demand. */}

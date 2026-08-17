@@ -152,7 +152,7 @@ export default function CategoryForm({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:opacity-70"
+                className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:bg-rule"
               >
                 Delete list
               </button>
