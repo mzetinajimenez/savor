@@ -6,7 +6,7 @@
 // is sage-on-ground-deep, legal at 6.45:1.
 
 const segmentBaseClass =
-  "flex min-h-11 flex-1 items-center justify-center rounded-sm px-4 text-sm font-semibold transition active:scale-[0.97] md:hover:bg-raised";
+  "flex min-h-11 flex-1 items-center justify-center rounded-sm px-4 text-sm font-semibold transition active:scale-[0.97]";
 
 export default function ViewToggle({
   view,
@@ -26,7 +26,7 @@ export default function ViewToggle({
         aria-pressed={view === "list"}
         onClick={() => onChange("list")}
         className={`${segmentBaseClass} ${
-          view === "list" ? "bg-gold-deep text-ground" : "text-sage"
+          view === "list" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised"
         }`}
       >
         List
@@ -36,7 +36,7 @@ export default function ViewToggle({
         aria-pressed={view === "map"}
         onClick={() => onChange("map")}
         className={`${segmentBaseClass} ${
-          view === "map" ? "bg-gold-deep text-ground" : "text-sage"
+          view === "map" ? "bg-gold-deep text-ground" : "text-sage md:hover:bg-raised"
         }`}
       >
         Map
