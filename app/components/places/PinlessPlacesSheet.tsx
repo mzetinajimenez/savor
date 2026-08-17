@@ -143,7 +143,7 @@ function PinlessPlaceRow({ place }: { place: Place }) {
           type="button"
           onClick={runSearch}
           disabled={state.status === "loading" || saving}
-          className="min-h-11 shrink-0 rounded-sm bg-gold px-3.5 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-60"
+          className="min-h-11 shrink-0 rounded-sm bg-gold px-3.5 text-sm font-semibold text-ground transition active:scale-[0.97] md:hover:bg-gold-deep disabled:opacity-60"
         >
           Find location
         </button>
@@ -159,7 +159,7 @@ function PinlessPlaceRow({ place }: { place: Place }) {
           <button
             type="button"
             onClick={runSearch}
-            className="min-h-11 shrink-0 rounded-sm border border-rule px-3 text-sm font-semibold text-cream transition active:scale-[0.97]"
+            className="min-h-11 shrink-0 rounded-sm border border-rule px-3 text-sm font-semibold text-cream transition active:scale-[0.97] md:hover:bg-ground-deep"
           >
             Retry
           </button>
@@ -178,7 +178,7 @@ function PinlessPlaceRow({ place }: { place: Place }) {
                 type="button"
                 onClick={() => choose(result)}
                 disabled={saving}
-                className="min-h-11 w-full border-t border-rule py-2.5 text-left transition-colors active:bg-ground-deep disabled:opacity-60"
+                className="min-h-11 w-full border-t border-rule py-2.5 text-left transition-colors active:bg-ground-deep md:hover:bg-ground-deep disabled:opacity-60"
               >
                 <p className="text-sm font-semibold leading-snug text-cream">{result.name}</p>
                 {result.address || result.city ? (

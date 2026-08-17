@@ -6,7 +6,7 @@
 // is sage-on-ground-deep, legal at 6.45:1.
 
 const segmentBaseClass =
-  "flex min-h-11 flex-1 items-center justify-center rounded-sm px-4 text-sm font-semibold transition active:scale-[0.97]";
+  "flex min-h-11 flex-1 items-center justify-center rounded-sm px-4 text-sm font-semibold transition active:scale-[0.97] md:hover:bg-raised";
 
 export default function ViewToggle({
   view,

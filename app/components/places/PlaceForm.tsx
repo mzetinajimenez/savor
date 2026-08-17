@@ -274,7 +274,7 @@ function AddPlaceSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep"
+            className="min-h-11 flex-1 rounded-sm border border-rule px-5 py-3 text-[0.95rem] font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep"
           >
             Cancel
           </button>
@@ -282,7 +282,7 @@ function AddPlaceSheet({
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="min-h-11 flex-1 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
+            className="min-h-11 flex-1 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -304,7 +304,7 @@ function AddPlaceSheet({
               onClick={() =>
                 setForm((f) => ({ ...f, sourceUrl: undefined, sourcePlatform: undefined }))
               }
-              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
+              className="min-h-11 shrink-0 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:opacity-70"
             >
               Remove
             </button>
@@ -329,7 +329,7 @@ function AddPlaceSheet({
               <button
                 type="button"
                 onClick={() => setPasteOpen(true)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule md:hover:bg-rule"
               >
                 Paste a link
               </button>

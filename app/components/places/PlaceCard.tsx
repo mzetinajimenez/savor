@@ -37,7 +37,7 @@ export default function PlaceCard({
   return (
     <Link
       href={`/places/${place.id}`}
-      className="flex min-h-11 items-center gap-3 border-t border-rule px-4 py-3 transition-colors active:bg-ground-deep"
+      className="flex min-h-11 items-center gap-3 border-t border-rule px-4 py-3 transition-colors active:bg-ground-deep md:hover:bg-ground-deep"
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
