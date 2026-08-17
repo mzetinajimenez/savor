@@ -159,7 +159,7 @@ function CriterionRow({
             onClick={() => onMove(criterion.id, "up")}
             disabled={!canMoveUp || reordering}
             aria-label={`Move ${criterion.name} up`}
-            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-25"
+            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep disabled:opacity-25"
           >
             <ChevronGlyph direction="up" />
           </button>
@@ -168,7 +168,7 @@ function CriterionRow({
             onClick={() => onMove(criterion.id, "down")}
             disabled={!canMoveDown || reordering}
             aria-label={`Move ${criterion.name} down`}
-            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-25"
+            className="grid h-11 w-11 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep disabled:opacity-25"
           >
             <ChevronGlyph direction="down" />
           </button>
@@ -189,7 +189,7 @@ function CriterionRow({
             <button
               type="button"
               onClick={startEditing}
-              className="min-h-11 w-full truncate rounded-sm px-3 py-2 text-left text-base text-cream transition active:bg-ground-deep"
+              className="min-h-11 w-full truncate rounded-sm px-3 py-2 text-left text-base text-cream transition active:bg-ground-deep md:hover:bg-ground-deep"
             >
               {criterion.name}
             </button>
@@ -201,7 +201,7 @@ function CriterionRow({
           onClick={() => setConfirmingDelete(true)}
           disabled={busy}
           aria-label={`Delete ${criterion.name}`}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-40"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-sm text-sage transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep disabled:opacity-40"
         >
           <TrashGlyph className="h-4 w-4" />
         </button>
@@ -271,7 +271,7 @@ function AddCriterionRow({ existing }: { existing: Criterion[] }) {
       <button
         type="submit"
         disabled={adding}
-        className="min-h-11 shrink-0 rounded-sm bg-gold px-4 text-sm font-semibold text-ground transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
+        className="min-h-11 shrink-0 rounded-sm bg-gold px-4 text-sm font-semibold text-ground transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:opacity-50"
       >
         Add
       </button>

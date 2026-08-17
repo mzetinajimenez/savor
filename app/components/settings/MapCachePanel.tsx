@@ -98,7 +98,7 @@ export default function MapCachePanel() {
         type="button"
         onClick={handleClear}
         disabled={clearing}
-        className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-sm border border-rule bg-ground-deep px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition active:scale-[0.97] disabled:opacity-50"
+        className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-sm border border-rule bg-ground-deep px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition active:scale-[0.97] md:hover:bg-raised disabled:opacity-50"
       >
         {clearing ? "Clearing…" : "Clear map cache"}
       </button>

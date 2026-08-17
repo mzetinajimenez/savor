@@ -98,7 +98,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
           type="submit"
           form="visit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-40"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save visit"}
         </button>
@@ -151,7 +151,7 @@ function VisitFormPanel({ onClose, placeId }: { onClose: () => void; placeId?: s
                         className={`min-h-11 rounded-sm px-3 py-2 text-left text-[0.95rem] transition active:scale-[0.97] ${
                           selected
                             ? "bg-raised font-medium text-gold"
-                            : "text-cream active:bg-ground-deep"
+                            : "text-cream active:bg-ground-deep md:hover:bg-ground-deep"
                         }`}
                       >
                         {p.name}
