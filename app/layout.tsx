@@ -3,6 +3,7 @@ import { Archivo, Bodoni_Moda, Hanken_Grotesk } from "next/font/google";
 import { Suspense } from "react";
 import AppInit from "./components/AppInit";
 import BottomNav from "./components/BottomNav";
+import NavRail from "./components/nav/NavRail";
 import { AddPlaceHost } from "./components/places/PlaceForm";
 import { Toaster } from "./components/Toast";
 import "./globals.css";
@@ -72,10 +73,13 @@ export default function RootLayout({
       <body className="min-h-dvh antialiased">
         {/* Single-mount data touchpoint: seeds the DB + requests persistent storage. */}
         <AppInit />
-        {/* Content clears the fixed bottom nav (nav + FAB overhang + safe area). */}
-        {/* Clears the fixed nav AND the FAB, which overhangs ~1.75rem above the bar —
-            6rem cleared the bar alone and let the FAB sit on top of trailing content. */}
-        <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))]">
+        <NavRail />
+        {/* Mobile (<md): content clears the fixed bottom nav (nav + FAB overhang + safe area).
+            6rem cleared the bar alone and let the FAB sit on top of trailing content, hence
+            8rem. Desktop (≥md): NavRail replaces the bottom bar, so that bottom clearance is
+            dropped and a left offset (md:ml-60) plus a ~720px reading column (md:max-w-[45rem])
+            takes its place — see NavRail's own w-60 for why 60 (15rem) is the shared width. */}
+        <main className="mx-auto w-full max-w-xl pb-[calc(8rem+env(safe-area-inset-bottom))] md:ml-60 md:max-w-[45rem] md:pb-[env(safe-area-inset-bottom)]">
           {children}
         </main>
         <BottomNav />
