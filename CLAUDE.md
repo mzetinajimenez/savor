@@ -13,7 +13,7 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 308 tests in 17 files today; keep them passing.
+  must all pass. 309 tests in 17 files today; keep them passing.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod, maplibre-gl, @protomaps/basemaps).
   Do not add an npm package without asking first — prefer a built-in or a few
@@ -264,6 +264,20 @@ path around the repo.
   own dist file imports its sibling via a plain relative import, and a Turbopack asset-copy of
   the worker alone (e.g. via `new URL(..., import.meta.url)`) copies it byte-for-byte without
   resolving that internal import, 404ing on the worker's own first load.
+- **Desktop (≥`md`) gets a left nav rail, not a wider phone layout.** `BottomNav`
+  (`md:hidden`) and `NavRail` (`hidden md:flex`, `app/components/nav/NavRail.tsx`)
+  share one tab list (`app/components/nav/tabs.tsx`) so the two surfaces can't
+  list a different set of tabs. Content is offset past the rail
+  (`md:ml-60`) and constrained to a ~720px reading column (`md:max-w-[45rem]`)
+  rather than stretching phone-width chrome across a wide window — set once on
+  `<main>` in `app/layout.tsx`, not per-route. Sheets stay centered modals at
+  ≥`sm`, unchanged by the rail.
+- **Hover states are `md:hover:`, never bare `hover:`.** Gated to `md` so a
+  touch tap (which fires `:hover` on many mobile browsers with no way to un-hover)
+  never gets stuck showing a hover treatment meant for a mouse. Each control's
+  hover class reuses the same token its existing `active:` press state already
+  uses — a new hover treatment must never introduce a color absent from the
+  `active:` variant beside it.
 - **The map partitions the list's result; it never runs its own query.** The map consumes the
   same `usePlaces` output the list renders and splits it with `partitionByCoords`. A separate
   query is the bug commit `393cdfe` fixed for category city chips.
