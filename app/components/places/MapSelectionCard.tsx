@@ -37,7 +37,7 @@ export default function MapSelectionCard({
       // inset) rather than guessing at a generic offset. z-20 stays under the nav's z-30.
       // anim-toast is the existing toast keyframe (app/globals.css) — reused rather than
       // inventing a new one, and already suppressed under prefers-reduced-motion there.
-      className="anim-toast fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 rounded-sm border border-rule bg-raised px-4 py-3 shadow-lg"
+      className="anim-toast fixed inset-x-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 rounded-sm border border-rule bg-raised px-4 py-3 shadow-lg md:inset-x-[calc(15rem+1rem)] md:bottom-[calc(1.25rem+env(safe-area-inset-bottom))]"
     >
       <Link href={`/places/${place.id}`} className="flex min-w-0 flex-1 items-center gap-3">
         <div className="min-w-0 flex-1">
