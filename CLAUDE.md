@@ -13,8 +13,8 @@ agent) making changes.
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
 - **Green before every commit.** `npm test`, `npm run build`, `npm run lint` and
-  `npm run test:e2e` must all pass. 309 unit tests in 17 files, plus 9 e2e specs
-  run across two viewport projects (18 runs) today; keep them passing. The e2e
+  `npm run test:e2e` must all pass. 314 unit tests in 17 files, plus 22 e2e specs
+  run across two viewport projects (44 runs) today; keep them passing. The e2e
   suite builds and serves a production bundle, so it is slower than the rest —
   run it before pushing, not on every save.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
@@ -110,8 +110,12 @@ sabor/
 ├── scripts/copy-maplibre-worker.mjs # copies maplibre-gl's worker + sibling into public/lib/maplibre (postinstall/predev/prebuild) — see MAPLIBRE_WORKER_URL
 ├── e2e/                          # Playwright specs — the ONLY tests that exercise app/ in a real browser
 │   ├── fixtures.ts               #   shared `test` export: stubs /api/lookup so no spec touches the network
+│   ├── helpers.ts                #   shared journey steps (addPlace / rate / createList / addToList)
 │   ├── first-run.spec.ts         #   journey 1 — empty state, seeded criteria, seed idempotency
-│   └── add-place-manually.spec.ts#   journey 2 — add/cancel/persist + the ?sheet=add back-button path
+│   ├── add-place-manually.spec.ts#   journey 2 — add/cancel/persist + the ?sheet=add back-button path
+│   ├── log-visit.spec.ts         #   journey 5 — log a visit, journal grouping (Today/Yesterday), persistence
+│   ├── list-weights.spec.ts      #   journey 6 — weights re-rank; missing=1 vs explicit 0; competition ties
+│   └── edit-criteria.spec.ts     #   journey 7 — rename/add/delete/reorder criteria → scores update
 └── (config) next.config.mjs · tsconfig.json ("@/*" → repo root, strict) · eslint.config.mjs · postcss.config.mjs · vitest.config.ts · playwright.config.ts
 ```
 
@@ -125,8 +129,14 @@ All data access funnels through **two files**, and nothing else touches Dexie:
 - **`lib/repo.ts`** — **the only write path.** Every mutation validates its input
   with zod, stamps `updatedAt` (and mints `id`/`createdAt`/`deletedAt: null` on
   create), and deletes by setting `deletedAt` (tombstone) rather than removing the
-  row. Read-modify-write setters (`setRating`, `setWeights`) run inside a Dexie
-  `rw` transaction to avoid lost updates.
+  row. Read-modify-write setters (`setRating`, `setWeights`,
+  `toggleCategoryOnPlace`) run inside a Dexie `rw` transaction, **re-reading the
+  row inside the transaction**, to avoid lost updates. A component must never
+  compute the next value from a closed-over render value and hand the whole
+  array/map to `updatePlace` — two interactions fired before Dexie's `liveQuery`
+  round-trips will both read the same stale value and one write is silently lost.
+  That was a real bug in place detail's list toggle, caught by journey 6's e2e
+  pass and fixed by moving the toggle into the repo.
 
 Reads go through **`lib/hooks.ts`**, which wraps plain async query functions in
 `useLiveQuery`. Every query filters `deletedAt === null`.
