@@ -303,3 +303,23 @@ export async function setWeights(
     await db.categories.update(categoryId, { weights: validated, updatedAt: nowIso() });
   });
 }
+
+// toggleCategoryOnPlace is the same shape of fix as setRating/setWeights above: a
+// read-modify-write on the place's whole `categoryIds` array. app/places/[id]/page.tsx used to
+// compute `next` from a `currentPlace.categoryIds` closed over at render time and hand the
+// whole array to updatePlace — two toggles (e.g. two different lists' Chips) fired close
+// together could both read the same pre-mutation array and the second write would silently
+// clobber the first's membership change (a lost update). Re-reading the place INSIDE the
+// transaction — never trusting a caller-supplied array — plus Dexie's transaction
+// serialization is what makes this atomic, exactly like setRating's ratings map and
+// setWeights' weights map.
+export async function toggleCategoryOnPlace(placeId: string, categoryId: string): Promise<void> {
+  await db.transaction("rw", db.places, async () => {
+    const place = await getLiveOrThrow(db.places, placeId, "place");
+    const next = place.categoryIds.includes(categoryId)
+      ? place.categoryIds.filter((id) => id !== categoryId)
+      : [...place.categoryIds, categoryId];
+    const validated = z.array(z.string()).parse(next);
+    await db.places.update(placeId, { categoryIds: validated, updatedAt: nowIso() });
+  });
+}
