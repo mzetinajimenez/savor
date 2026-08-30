@@ -46,6 +46,12 @@ next-env.d.ts
 # playwright mcp scratch (snapshots, console logs)
 .playwright-mcp/
 
+# playwright (e2e) — reports, traces, screenshots and the downloaded browser binaries' marker
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # maplibre-gl worker + its sibling, copied verbatim from node_modules by
 # scripts/copy-maplibre-worker.mjs (see lib/mapStyle.ts's MAPLIBRE_WORKER_URL) — regenerated on
 # every install/dev/build, never committed, so it can't drift out of sync with the installed

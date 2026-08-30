@@ -12,15 +12,19 @@ agent) making changes.
   `main` with conventional-commit messages (`feat:`, `fix:`, `docs:`, `chore:`,
   `refactor:`). Keep commits in logical chunks. Stage explicit paths — never
   `git add -A`.
-- **Green before every commit.** `npm test`, `npm run build`, and `npm run lint`
-  must all pass. 309 tests in 17 files today; keep them passing.
+- **Green before every commit.** `npm test`, `npm run build`, `npm run lint` and
+  `npm run test:e2e` must all pass. 309 unit tests in 17 files, plus 9 e2e specs
+  run across two viewport projects (18 runs) today; keep them passing. The e2e
+  suite builds and serves a production bundle, so it is slower than the rest —
+  run it before pushing, not on every save.
 - **Ask before adding dependencies.** The dependency set is deliberately tiny
   (Dexie, dexie-react-hooks, next, react, zod, maplibre-gl, @protomaps/basemaps).
   Do not add an npm package without asking first — prefer a built-in or a few
   lines of local code. (The PWA icons, for example, are generated with Node's
   built-in `zlib`, not a canvas library. maplibre-gl and @protomaps/basemaps are
   lazy-loaded behind one dynamic import — this was one deliberate, measured
-  exception.)
+  exception. `@playwright/test` is the one approved devDependency beyond the
+  original set, added in Phase 6; it ships in nothing.)
 - **IndexedDB migrations are additive-only, NEVER destructive.** The Dexie schema
   is versioned in `lib/db.ts`. A schema change adds a **new** `db.version(N)`
   block (and bumps `SCHEMA_VERSION`); it never edits the existing `version(1)`
@@ -104,7 +108,11 @@ sabor/
 ├── public/                       # manifest.webmanifest + icon-192 / icon-512 / icon-maskable-512 / apple-touch-icon
 ├── scripts/generate-icons.mjs    # regenerates the PWA icons (built-in zlib PNG encoder, no deps)
 ├── scripts/copy-maplibre-worker.mjs # copies maplibre-gl's worker + sibling into public/lib/maplibre (postinstall/predev/prebuild) — see MAPLIBRE_WORKER_URL
-└── (config) next.config.mjs · tsconfig.json ("@/*" → repo root, strict) · eslint.config.mjs · postcss.config.mjs · vitest.config.ts
+├── e2e/                          # Playwright specs — the ONLY tests that exercise app/ in a real browser
+│   ├── fixtures.ts               #   shared `test` export: stubs /api/lookup so no spec touches the network
+│   ├── first-run.spec.ts         #   journey 1 — empty state, seeded criteria, seed idempotency
+│   └── add-place-manually.spec.ts#   journey 2 — add/cancel/persist + the ?sheet=add back-button path
+└── (config) next.config.mjs · tsconfig.json ("@/*" → repo root, strict) · eslint.config.mjs · postcss.config.mjs · vitest.config.ts · playwright.config.ts
 ```
 
 ## Persistence — the storage seam
@@ -337,8 +345,8 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   behaviour can be measured against real tile payloads.
 - **No automated coverage for the map's browser behaviour.** Pin rendering, pan-vs-tap
   deselection, the geolocation prompt, the persistence gate and the warm-cache offline path were
-  all verified by hand. Land them alongside the `?sheet=` specs when `@playwright/test` is
-  scaffolded (a new devDependency — ask first).
+  all verified by hand. The Playwright harness now exists (Phase 6), so these are unblocked —
+  they are simply not written yet. Journeys 3–8 come first.
 - **Antimeridian-spanning collections fit the long way round.** `lib/mapBounds.ts` does not
   handle a bounding box crossing ±180°. Irrelevant for a personal restaurant ledger; fix it if
   someone's places ever straddle the date line.
@@ -356,8 +364,9 @@ Known gaps, not yet urgent enough to block a commit but worth doing soon:
   the end of Phase 4 exercised Back, Forward, and navigating away with a sheet open (and
   caught two real defects along the way — a `ConfirmBox` focus restore that was a no-op, and
   a `?sheet=add` name collision — both fixed), but none of it is automated, so a future
-  regression here won't fail CI. Land them as Playwright specs when Phase 6 scaffolds
-  `@playwright/test` (a new devDependency — ask first).
+  regression here won't fail CI. **Partly closed:** `e2e/add-place-manually.spec.ts` now pins
+  Back-closes-the-sheet on `?sheet=add` across both viewports. Forward, and navigating away
+  with a sheet open, are still uncovered.
 - **Drag-to-dismiss is untested on a real touch device.** `lib/sheetDrag.ts`'s thresholds
   (`DISMISS_FRACTION`, `DISMISS_VELOCITY`) have unit-test coverage, but no one has dragged a
   sheet with an actual finger on actual glass, and `prefers-reduced-motion` suppression
