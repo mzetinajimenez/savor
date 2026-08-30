@@ -22,7 +22,7 @@ import type { RankedEntry } from "@/lib/ranking";
 import type { Category, Criterion } from "@/lib/types";
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-rule bg-ground-deep px-3.5 py-2 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule md:hover:bg-rule";
 
 export default function CategoryDetailPage() {
   // useSearchParams() (below, in the tab switch) makes this route dynamic and requires a
@@ -95,7 +95,7 @@ function CategoryDetailInner() {
         >
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep"
           >
             Back to Lists
           </Link>
@@ -204,7 +204,7 @@ function CategoryDetailInner() {
               <li key={place.id} className="border-t border-rule">
                 <Link
                   href={`/places/${place.id}`}
-                  className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-ground-deep"
+                  className="flex min-h-11 items-center gap-3 px-4 py-3.5 transition active:bg-ground-deep md:hover:bg-ground-deep"
                 >
                   <span className="flex w-10 shrink-0 items-center">
                     <span aria-hidden className="h-1.5 w-1.5 rounded-full border border-cream" />
@@ -258,7 +258,7 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={`min-h-11 border-b-2 px-0.5 pb-2 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] transition ${
-        active ? "border-gold text-gold" : "border-transparent text-sage active:text-cream"
+        active ? "border-gold text-gold" : "border-transparent text-sage active:text-cream md:hover:text-cream"
       }`}
     >
       {children}
@@ -283,7 +283,7 @@ function RankedPlaceRow({
     <li className="relative border-t border-rule">
       <Link
         href={`/places/${entry.place.id}`}
-        className="flex min-h-11 select-none items-center gap-3 px-4 py-3.5 transition [-webkit-touch-callout:none] active:bg-ground-deep"
+        className="flex min-h-11 select-none items-center gap-3 px-4 py-3.5 transition [-webkit-touch-callout:none] active:bg-ground-deep md:hover:bg-ground-deep"
         onClick={(e) => {
           if (longPress.consumeTrigger()) e.preventDefault();
         }}

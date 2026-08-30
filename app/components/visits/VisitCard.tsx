@@ -20,7 +20,7 @@ export default function VisitCard({
   return (
     <Link
       href={`/places/${visit.placeId}`}
-      className="flex min-h-11 flex-col justify-center gap-0.5 border-t border-rule px-4 py-3 transition-colors active:bg-ground-deep"
+      className="flex min-h-11 flex-col justify-center gap-0.5 border-t border-rule px-4 py-3 transition-colors active:bg-ground-deep md:hover:bg-ground-deep"
     >
       <h3 className="truncate font-display text-lg leading-tight text-cream">{placeName}</h3>
       {visit.dishes ? (

@@ -33,10 +33,10 @@ const STATUS_LABEL: Record<PlaceStatus, string> = {
 };
 
 const actionButtonClass =
-  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-[0.97] active:bg-ground-deep";
+  "inline-flex min-h-11 items-center gap-1 rounded-sm border border-sage-deep bg-ground-deep px-3.5 py-2 text-sm font-semibold text-sage transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-raised";
 
 const goldButtonClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-sm bg-gold px-4 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep";
 
 // Local-timezone-safe date formatting for a plain YYYY-MM-DD string (matches the pattern used by
 // VisitForm/JournalPage for the same `<input type="date">` format — deliberately not
@@ -103,7 +103,7 @@ function PlaceDetailInner() {
         >
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep"
           >
             Back to savor
           </Link>
@@ -167,7 +167,7 @@ function PlaceDetailInner() {
           // "Been" and "Want to try" are distinguished by the label, not by colour: this is a
           // status toggle, and gold-vs-gold said nothing while still reading as active state.
           // Matches PlaceCard, which renders the same datum as a recessed Chip.
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-[0.97] active:bg-raised disabled:opacity-60"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 font-util text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-cream transition active:scale-[0.97] active:bg-raised md:hover:bg-raised disabled:opacity-60"
         >
           {STATUS_LABEL[place.status]}
         </button>
@@ -181,7 +181,7 @@ function PlaceDetailInner() {
             href={place.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gold active:opacity-70"
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-gold active:opacity-70 md:hover:underline"
           >
             <LinkGlyph className="h-4 w-4" />
             {place.sourcePlatform === "instagram"
@@ -409,7 +409,7 @@ function PlaceEditSheet({
           type="submit"
           form="place-edit-form"
           disabled={!canSave}
-          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -494,7 +494,7 @@ function PlaceEditSheet({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70"
+              className="min-h-11 rounded-sm bg-ground-deep px-3.5 text-sm font-semibold text-coral transition active:scale-[0.97] active:opacity-70 md:hover:bg-rule"
             >
               Delete place
             </button>

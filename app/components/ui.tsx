@@ -97,8 +97,8 @@ export function Chip({
       aria-pressed={active}
       // min-h-11 (44px) keeps the tap target thumb-friendly without inflating the visual chip —
       // the extra height is invisible padding around the same compact px-3.5/py-1.5 label.
-      className={`${base} ${look} min-h-11 active:scale-[0.97] ${
-        active ? "active:opacity-90" : "active:opacity-80"
+      className={`${base} ${look} min-h-11 active:scale-[0.97] md:hover:scale-[0.99] ${
+        active ? "active:opacity-90 md:hover:opacity-90" : "active:opacity-80 md:hover:opacity-80"
       } ${className}`}
     >
       {children}
@@ -142,7 +142,7 @@ export function AddPlaceButton({ label = "Add a place" }: { label?: string }) {
     <button
       type="button"
       onClick={() => emitAddPlace()}
-      className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep"
+      className="inline-flex items-center gap-2 rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep"
     >
       <PlusGlyph className="h-4 w-4" />
       {label}
@@ -177,8 +177,8 @@ export function PasteLinkField({
   const canSubmit = value.trim().length > 0 && !submitting;
   const buttonClass =
     variant === "primary"
-      ? "min-h-11 w-full rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
-      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule disabled:opacity-60";
+      ? "min-h-11 w-full rounded-sm bg-gold px-5 py-3 text-[0.95rem] font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:pointer-events-none disabled:opacity-40"
+      : "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm border border-rule bg-ground-deep px-4 text-sm font-semibold text-gold transition active:scale-[0.97] active:bg-rule md:hover:bg-rule disabled:opacity-60";
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3 text-left">
@@ -302,7 +302,7 @@ export function RatingRow({
             aria-label={`${n} of 5`}
             tabIndex={selected || (current === 0 && n === 1) ? 0 : -1}
             onClick={() => onChange(selected ? null : n)}
-            className="grid h-11 w-11 place-items-center rounded-sm transition active:scale-[0.97]"
+            className="grid h-11 w-11 place-items-center rounded-sm transition active:scale-[0.97] md:hover:bg-ground-deep"
           >
             <Bead filled={n <= current} size="md" />
           </button>
@@ -428,7 +428,7 @@ export function ConfirmBox({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm border border-rule px-4 text-sm font-semibold text-cream transition active:scale-[0.97] active:bg-ground-deep md:hover:bg-ground-deep disabled:opacity-50"
         >
           {cancelLabel}
         </button>
@@ -436,7 +436,7 @@ export function ConfirmBox({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] disabled:opacity-50"
+          className="min-h-11 flex-1 rounded-sm bg-coral-deep px-4 text-sm font-semibold text-ground transition active:scale-[0.97] md:hover:opacity-90 disabled:opacity-50"
         >
           {confirmLabel}
         </button>

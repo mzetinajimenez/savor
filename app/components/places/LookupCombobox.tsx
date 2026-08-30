@@ -211,7 +211,7 @@ export default function LookupCombobox({
                 aria-selected={i === activeIndex}
                 onClick={() => choose(result)}
                 className={`min-h-11 cursor-pointer border-t border-rule px-1 py-2.5 transition-colors ${
-                  i === activeIndex ? "bg-ground-deep" : "active:bg-ground-deep"
+                  i === activeIndex ? "bg-ground-deep" : "active:bg-ground-deep md:hover:bg-ground-deep"
                 }`}
               >
                 <p className="text-sm font-semibold leading-snug text-cream">{result.name}</p>

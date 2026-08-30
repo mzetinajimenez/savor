@@ -137,7 +137,7 @@ function StoragePanel() {
           type="button"
           onClick={handlePersist}
           disabled={requesting}
-          className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-sm bg-gold px-5 py-2.5 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep disabled:opacity-50"
+          className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-sm bg-gold px-5 py-2.5 text-sm font-semibold text-ground shadow-sm transition active:scale-[0.97] active:bg-gold-deep md:hover:bg-gold-deep disabled:opacity-50"
         >
           {requesting ? "Requesting…" : "Protect my data"}
         </button>

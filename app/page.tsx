@@ -161,7 +161,7 @@ function PlacesInner() {
         // 100dvh minus the sticky header (safe-area-aware title + search + toggle + filter
         // row, ~9.5rem in practice) and the fixed BottomNav (h-16 plus its safe-area inset,
         // ~4.5rem) — see layout.tsx's pb-[calc(8rem+env(safe-area-inset-bottom))] on <main>.
-        <div className="h-[calc(100dvh-14rem)] w-full overscroll-contain">
+        <div className="h-[calc(100dvh-14rem)] w-full overscroll-contain md:h-[calc(100dvh-9.5rem)]">
           <MapView
             places={places}
             liveCriterionIds={liveCriterionIds}

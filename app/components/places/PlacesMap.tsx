@@ -399,7 +399,7 @@ export default function PlacesMap({
           aria-busy={locating}
           onClick={handleLocate}
           disabled={locating}
-          className="absolute right-3 top-3 z-10 grid min-h-11 min-w-11 place-items-center rounded-sm border border-rule bg-raised text-cream transition active:scale-[0.97] disabled:opacity-60"
+          className="absolute right-3 top-3 z-10 grid min-h-11 min-w-11 place-items-center rounded-sm border border-rule bg-raised text-cream transition active:scale-[0.97] md:hover:bg-ground-deep disabled:opacity-60"
         >
           <CrosshairGlyph className={`h-5 w-5 ${locating ? "animate-pulse" : ""}`} />
         </button>
@@ -439,7 +439,7 @@ export default function PlacesMap({
         <button
           type="button"
           onClick={onShowPinless}
-          className="absolute inset-x-0 bottom-0 z-10 min-h-11 w-full bg-ground-deep/90 px-4 py-2.5 text-left text-sm text-cream transition active:bg-ground-deep"
+          className="absolute inset-x-0 bottom-0 z-10 min-h-11 w-full bg-ground-deep/90 px-4 py-2.5 text-left text-sm text-cream transition active:bg-ground-deep md:hover:bg-ground-deep"
         >
           {pinless.length} place{pinless.length === 1 ? "" : "s"}{" "}
           {pinless.length === 1 ? "isn't" : "aren't"} on the map
