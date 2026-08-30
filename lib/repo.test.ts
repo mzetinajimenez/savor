@@ -13,6 +13,7 @@ import {
   deleteVisit,
   setRating,
   setWeights,
+  toggleCategoryOnPlace,
   updateCategory,
   updateCriterion,
   updatePlace,
@@ -519,5 +520,60 @@ describe("setWeights", () => {
     const category = await createCategory({ name: "Cat", sortOrder: 0 });
     await deleteCategory(category.id);
     await expect(setWeights(category.id, { a: 1 })).rejects.toThrow();
+  });
+});
+
+describe("toggleCategoryOnPlace", () => {
+  it("adds a category id when the place doesn't already have it", async () => {
+    const place = await createPlace({ name: "P", status: "been" });
+    await toggleCategoryOnPlace(place.id, "cat-1");
+    const stored = await db.places.get(place.id);
+    expect(stored?.categoryIds).toEqual(["cat-1"]);
+  });
+
+  it("removes a category id the place already has", async () => {
+    const place = await createPlace({
+      name: "P",
+      status: "been",
+      categoryIds: ["cat-1", "cat-2"],
+    });
+    await toggleCategoryOnPlace(place.id, "cat-1");
+    const stored = await db.places.get(place.id);
+    expect(stored?.categoryIds).toEqual(["cat-2"]);
+  });
+
+  it("stamps updatedAt on the place", async () => {
+    const place = await createPlace({ name: "P", status: "been" });
+    vi.setSystemTime(new Date("2026-01-01T00:05:00.000Z"));
+    await toggleCategoryOnPlace(place.id, "cat-1");
+    const stored = await db.places.get(place.id);
+    expect(stored?.updatedAt).toBe("2026-01-01T00:05:00.000Z");
+  });
+
+  it("throws when the place is missing or tombstoned", async () => {
+    await expect(toggleCategoryOnPlace("nope", "cat-1")).rejects.toThrow();
+
+    const place = await createPlace({ name: "P", status: "been" });
+    await deletePlace(place.id);
+    await expect(toggleCategoryOnPlace(place.id, "cat-1")).rejects.toThrow();
+  });
+
+  // Regression test: the old app/places/[id]/page.tsx#toggleCategory computed `next` from a
+  // `categoryIds` array closed over at render time and handed the WHOLE array to updatePlace —
+  // two toggles for DIFFERENT categories fired without awaiting between them could both read
+  // the same pre-mutation array, and the second write would silently clobber the first's
+  // membership change (a lost update), exactly like setRating's and setWeights' own concurrency
+  // regressions above. toggleCategoryOnPlace re-reads the place INSIDE a Dexie `rw` transaction
+  // instead of trusting a caller-supplied array, so both toggles must survive.
+  it("does not lose a concurrent toggle of a different category", async () => {
+    const place = await createPlace({ name: "P", status: "been" });
+
+    await Promise.all([
+      toggleCategoryOnPlace(place.id, "cat-1"),
+      toggleCategoryOnPlace(place.id, "cat-2"),
+    ]);
+
+    const stored = await db.places.get(place.id);
+    expect(new Set(stored?.categoryIds)).toEqual(new Set(["cat-1", "cat-2"]));
   });
 });

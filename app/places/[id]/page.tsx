@@ -16,7 +16,7 @@ import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { useCategories, useCriteria, usePlace, useVisits } from "@/lib/hooks";
 import { hasCoords } from "@/lib/mapBounds";
 import { compositeScore } from "@/lib/ranking";
-import { deletePlace, updatePlace } from "@/lib/repo";
+import { deletePlace, toggleCategoryOnPlace, updatePlace } from "@/lib/repo";
 import type { Category, Criterion, Place, PlaceStatus } from "@/lib/types";
 import { useSheetParam } from "@/lib/useSheetParam";
 import Sheet from "@/app/components/Sheet";
@@ -135,12 +135,14 @@ function PlaceDetailInner() {
     }
   }
 
+  // Delegates to repo.toggleCategoryOnPlace rather than computing `next` from
+  // `currentPlace.categoryIds` here — that closed-over array is only as fresh as this render,
+  // and two toggles fired close together (e.g. two different lists' Chips) could both read the
+  // same pre-mutation array, with the second write silently clobbering the first (a lost
+  // update). The repo function re-reads the place inside a transaction instead.
   async function toggleCategory(categoryId: string) {
-    const next = currentPlace.categoryIds.includes(categoryId)
-      ? currentPlace.categoryIds.filter((existing) => existing !== categoryId)
-      : [...currentPlace.categoryIds, categoryId];
     try {
-      await updatePlace(currentPlace.id, { categoryIds: next });
+      await toggleCategoryOnPlace(currentPlace.id, categoryId);
     } catch {
       toast("Couldn't update lists", true);
     }
